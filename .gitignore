@@ -1,0 +1,58 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+config.json
+config.local.*
+*.pem
+*.key
+**/secrets/
+
+# Runtime state and household data
+state/
+**/state/
+data/
+home-profile/
+memory/
+memories/
+snapshots/
+recordings/
+miot_cache/
+coreml_cache/
+models/
+jarvis-background/
+logs/
+**/*.log
+*.pid
+
+# Databases
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Dependencies and build output
+node_modules/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+coverage/
+dist/
+build/
+.next/
+.vite/
+
+# Local service files
+supervisord.conf
+*.plist.local
+.DS_Store
+*.swp
+*.tmp
+*.bak
+*.backup
+
+# Nested integration checkouts
+integrations/migpt-vue/vendor/
