@@ -28,7 +28,7 @@ class ExecutionPlanTests(unittest.TestCase):
         self.assertEqual(plan.capability, "camera_inventory")
         self.assertEqual(plan.capability_version, 1)
         self.assertEqual(plan.executor, "bridge_recipe")
-        self.assertEqual(plan.producer, "miloco")
+        self.assertEqual(plan.producer, "external_home")
         self.assertEqual(plan.phase, "execution")
         self.assertEqual(plan.transition, "好的主人，我查一下。")
         self.assertEqual(plan.progress, "我正在读取设备目录。")
@@ -74,7 +74,7 @@ class ExecutionPlanTests(unittest.TestCase):
 
     def test_non_capability_routes_keep_safe_existing_ownership(self):
         cases = [
-            (Route.CAMERA, "camera_recent", "miloco", "miloco", "execution"),
+            (Route.CAMERA, "camera_recent", "external_home", "external_home", "execution"),
             (Route.LOCAL_CHAT, "chat", "local_4b", "local_4b", "generation"),
             (Route.HOME, "query", "openclaw", "openclaw", "planning"),
             (Route.TASK, "create", "openclaw", "openclaw", "planning"),
@@ -118,7 +118,7 @@ class ExecutionPlanTests(unittest.TestCase):
         self.assertEqual(plan.execution_class, "quick_tool")
         self.assertEqual(plan.tool_class, "deterministic_query")
         self.assertEqual(plan.selector_tier, "08b_eligible")
-        self.assertEqual((plan.executor, plan.producer), ("bridge_recipe", "miloco"))
+        self.assertEqual((plan.executor, plan.producer), ("bridge_recipe", "external_home"))
 
     def test_level2_quick_tool_plan_is_child_of_same_arbitration(self):
         registry = self.make_selectable("4b_eligible")

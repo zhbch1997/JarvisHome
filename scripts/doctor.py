@@ -19,7 +19,6 @@ def report() -> dict[str, Any]:
         "runtime_dependencies": modules,
         "optional_commands": {
             "ollama": shutil.which("ollama") is not None,
-            "miloco-cli": shutil.which("miloco-cli") is not None,
         },
         "offline_demo_available": importlib.util.find_spec("mock_home") is not None,
     }

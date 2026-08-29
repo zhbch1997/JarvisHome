@@ -12,7 +12,7 @@ from typing import Any, Callable
 
 
 _ALLOWED_GROUP_KEYS = {"key", "kind", "confidence", "turn_ids"}
-_FORBIDDEN_TOOLS = {"shell", "web", "browser", "miloco.device_action"}
+_FORBIDDEN_TOOLS = {"shell", "web", "browser", "external_home.device_action"}
 _DRAFT_KEYS = {
     "schema_version", "key", "status", "initial_tier", "recipe_eligible",
     "observed_tool_signature", "examples", "evidence_ids", "days", "confidence",

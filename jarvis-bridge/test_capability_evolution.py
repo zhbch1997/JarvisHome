@@ -19,7 +19,7 @@ class CapabilityEvolutionTests(unittest.TestCase):
     def test_review_creates_complete_next_version_bundle_not_partial_rule(self):
         turn = {"turn_id": "t1", "request": "监控设备都有哪些"}
         review = RouteReview(
-            "home", "query", "miloco", 0.97, True,
+            "home", "query", "external_home", 0.97, True,
             "应读取真实摄像头目录", "camera_inventory",
         )
         proposal = propose_from_review(self.registry, turn, review)
@@ -56,7 +56,7 @@ class CapabilityEvolutionTests(unittest.TestCase):
         )
 
         review = RouteReview(
-            "home", "query", "miloco", 0.99, True,
+            "home", "query", "external_home", 0.99, True,
             "应读取真实摄像头目录", "camera_inventory",
         )
         proposal = propose_from_review(
@@ -78,7 +78,7 @@ class CapabilityEvolutionTests(unittest.TestCase):
         self.assertIsNone(propose_from_review(self.registry, {"turn_id": "t2", "request": "讲笑话"}, review))
 
     def test_repeated_review_merges_examples_and_evidence_into_same_next_version(self):
-        review = RouteReview("home", "query", "miloco", 0.99, True, "目录查询", "camera_inventory")
+        review = RouteReview("home", "query", "external_home", 0.99, True, "目录查询", "camera_inventory")
         propose_from_review(self.registry, {"turn_id": "t1", "request": "监控设备有哪些"}, review)
         proposal = propose_from_review(self.registry, {"turn_id": "t2", "request": "列出家中摄像头"}, review)
         self.assertEqual(proposal["capability"]["version"], 2)

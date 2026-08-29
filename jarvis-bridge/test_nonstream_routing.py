@@ -21,10 +21,10 @@ class NonStreamRoutingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["choices"][0]["message"]["content"], "")
         self.assertEqual(result["jarvis"]["route"], "native")
 
-    async def test_camera_query_uses_miloco_backend(self):
+    async def test_camera_query_uses_external_home_backend(self):
         body = {"model": "jarvis", "messages": [{"role": "user", "content": "家里有几台摄像头"}]}
         decision = RouteDecision(api_server.Route.CAMERA, "camera_recent", "semantic_camera_recent", "read_only")
-        with patch.object(api_server.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(api_server, "run_miloco_query", return_value="家里有2台摄像头。") as call:
+        with patch.object(api_server.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(api_server, "run_external_home_query", return_value="家里有2台摄像头。") as call:
             result = await api_server._complete_chat(body)
         self.assertIn("2台", result["choices"][0]["message"]["content"])
         self.assertEqual(result["jarvis"]["route"], "camera")

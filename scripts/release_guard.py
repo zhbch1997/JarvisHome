@@ -146,8 +146,9 @@ def _staged_files(root: Path) -> list[str]:
 
 
 def scan_staged(root: Path) -> list[Finding]:
+    """Scan every blob in the Git index, not only paths changed in this diff."""
     findings: list[Finding] = []
-    for name in _staged_files(root):
+    for name in tracked_files(root):
         relative = Path(name)
         if relative.as_posix() == "scripts/release_guard.py":
             continue

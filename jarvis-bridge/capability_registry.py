@@ -16,10 +16,10 @@ _ALLOWED_OPERATIONS = {
     "query", "action", "chat", "create", "list", "update", "delete",
     "camera_recent", "camera_live",
 }
-_ALLOWED_EXECUTORS = {"bridge_recipe", "miloco_direct", "local_9b", "local_9b_agent", "local_4b_device", "local_4b_scene", "openclaw"}
-_ALLOWED_PRODUCERS = {"miloco", "local_9b", "local_9b_agent", "local_4b", "openclaw"}
+_ALLOWED_EXECUTORS = {"bridge_recipe", "external_home_direct", "local_9b", "local_9b_agent", "local_4b_device", "local_4b_scene", "openclaw"}
+_ALLOWED_PRODUCERS = {"external_home", "local_9b", "local_9b_agent", "local_4b", "openclaw"}
 _ALLOWED_TOOLS = {
-    "miloco.device_list", "miloco.turtle_recent", "miloco.hamster_recent", "miloco.device_action", "miloco.scene_trigger",
+    "external_home.device_list", "external_home.turtle_recent", "external_home.hamster_recent", "external_home.device_action", "external_home.scene_trigger",
 }
 _ALLOWED_TRANSFORMS = {"filter_eq"}
 _ALLOWED_TEMPLATES = {
@@ -162,7 +162,7 @@ class CapabilityRegistry:
             primary_value = bundle["execution"].get("primary")
             execution_kind = {
                 "bridge_recipe": "deterministic_query",
-                "miloco_direct": "direct_read",
+                "external_home_direct": "direct_read",
                 "openclaw": "openclaw_tool",
             }.get(primary_value, "composed_read") if isinstance(primary_value, str) else "composed_read"
             bundle["taxonomy"] = {
@@ -236,7 +236,7 @@ class CapabilityRegistry:
         if primary == fallback:
             raise CapabilityValidationError("executor fallback cycle")
         expected_producer = {
-            "bridge_recipe": "miloco", "miloco_direct": "miloco", "local_9b": "local_9b",
+            "bridge_recipe": "external_home", "external_home_direct": "external_home", "local_9b": "local_9b",
             "local_9b_agent": "local_9b_agent", "openclaw": "openclaw",
             "local_4b_device": "local_4b", "local_4b_scene": "local_4b",
         }[primary]
@@ -244,7 +244,7 @@ class CapabilityRegistry:
             raise CapabilityValidationError("executor and producer mismatch")
         allowed_execution_kinds = {
             "bridge_recipe": {"deterministic_query", "composed_read"},
-            "miloco_direct": {"direct_read"},
+            "external_home_direct": {"direct_read"},
             "openclaw": {"openclaw_tool"},
             "local_9b": {"composed_read"},
             "local_9b_agent": {"composed_read"},
@@ -281,7 +281,7 @@ class CapabilityRegistry:
             raise CapabilityValidationError("recipe tool is not exactly allowed")
         if set(permissions["allowed_tools"]) & set(permissions["forbidden_tools"]):
             raise CapabilityValidationError("tool is both allowed and forbidden")
-        if primary == "local_9b_agent" and recipe["tool"] != "miloco.device_list":
+        if primary == "local_9b_agent" and recipe["tool"] != "external_home.device_list":
             raise CapabilityValidationError("9B agent requested unsupported tool")
 
         delivery = bundle["delivery"]

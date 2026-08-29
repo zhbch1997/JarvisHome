@@ -14,17 +14,17 @@ CAMERA = {
         "examples": ["家里有几台摄像头", "有哪些摄像头"],
     },
     "execution": {
-        "primary": "bridge_recipe", "producer": "miloco",
+        "primary": "bridge_recipe", "producer": "external_home",
         "fallback": "openclaw", "recipe": "camera_inventory_v1",
     },
     "recipe": {
-        "tool": "miloco.device_list",
+        "tool": "external_home.device_list",
         "transforms": [{"op": "filter_eq", "field": "category", "value": "camera"}],
         "response_template": "camera_inventory_zh",
     },
     "permissions": {
-        "risk": "read_only", "allowed_tools": ["miloco.device_list"],
-        "forbidden_tools": ["miloco.device_action", "shell", "web"],
+        "risk": "read_only", "allowed_tools": ["external_home.device_list"],
+        "forbidden_tools": ["external_home.device_action", "shell", "web"],
     },
     "delivery": {
         "transition": "好的主人，我查一下。",
@@ -47,7 +47,7 @@ class CapabilityRegistryTests(unittest.TestCase):
     def test_valid_bundle_is_saved_privately_and_resolved_by_id(self):
         saved = self.registry.install_initial(CAMERA)
         self.assertEqual(saved["id"], "camera_inventory")
-        self.assertEqual(self.registry.active("camera_inventory")["execution"]["producer"], "miloco")
+        self.assertEqual(self.registry.active("camera_inventory")["execution"]["producer"], "external_home")
         self.assertEqual((self.root / "active" / "camera_inventory.json").stat().st_mode & 0o777, 0o600)
 
     def test_device_action_bundle_is_a_registered_4b_write_capability(self):
@@ -55,15 +55,20 @@ class CapabilityRegistryTests(unittest.TestCase):
         self.assertEqual(bundle["selector"]["tier"], "4b_eligible")
         self.assertEqual(bundle["execution"]["primary"], "local_4b_device")
         self.assertEqual(bundle["permissions"]["risk"], "device_action")
-        self.assertEqual(bundle["recipe"]["tool"], "miloco.device_action")
+        self.assertEqual(bundle["recipe"]["tool"], "external_home.device_action")
         self.assertIn(
             "home_device_action",
             [item["id"] for item in self.registry.list_selectable("4b")],
         )
 
-    def test_scene_action_bundle_is_the_only_scene_quick_tool(self):
+    def test_defaults_do_not_register_external_home_capabilities_unless_enabled(self):
         from capability_defaults import install_defaults
         install_defaults(self.registry)
+        self.assertEqual([], self.registry.list_active())
+
+    def test_scene_action_bundle_is_the_only_scene_quick_tool(self):
+        from capability_defaults import install_defaults
+        install_defaults(self.registry, external_home_enabled=True)
         scene_tools = [
             item for item in self.registry.list_selectable("4b")
             if item["taxonomy"]["execution_kind"] == "scene_action"
@@ -218,8 +223,8 @@ class CapabilityRegistryTests(unittest.TestCase):
     def test_rejects_executor_producer_permission_and_transition_mismatch(self):
         invalid = json.loads(json.dumps(CAMERA))
         invalid["execution"]["primary"] = "local_9b_agent"
-        invalid["recipe"]["tool"] = "miloco.device_action"
-        invalid["permissions"]["allowed_tools"] = ["miloco.device_action"]
+        invalid["recipe"]["tool"] = "external_home.device_action"
+        invalid["permissions"]["allowed_tools"] = ["external_home.device_action"]
         with self.assertRaises(CapabilityValidationError):
             self.registry.validate(invalid)
 

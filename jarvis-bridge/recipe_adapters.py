@@ -1,16 +1,15 @@
 """Registered, deterministic adapters used by capability recipes."""
 from __future__ import annotations
 
-import os
 import json
-import subprocess
 from datetime import datetime
 from typing import Any
 
 from recipe_runtime import RecipeExecutionError
+from external_home_client import ExternalHomeClient, ExternalHomeConfigError
 
 
-def parse_miloco_device_list(stdout: str) -> list[dict[str, Any]]:
+def parse_external_home_device_list(stdout: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for line in str(stdout or "").splitlines():
         parts = [part.strip() for part in line.split("|")]
@@ -27,31 +26,19 @@ def parse_miloco_device_list(stdout: str) -> list[dict[str, Any]]:
     return rows
 
 
-def miloco_device_list() -> list[dict[str, Any]]:
-    env = os.environ.copy()
-    env.setdefault("MILOCO_HOME", os.path.expanduser("~/.hermes/miloco"))
+def external_home_device_list() -> list[dict[str, Any]]:
     try:
-        result = subprocess.run(
-            [os.getenv("MILOCO_CLI", "miloco-cli"), "device", "list"],
-            capture_output=True,
-            text=True,
-            timeout=20,
-            env=env,
-            shell=False,
-        )
-    except subprocess.TimeoutExpired as exc:
+        return ExternalHomeClient.from_env().list_devices()
+    except ExternalHomeConfigError as exc:
         raise RecipeExecutionError(
-            "data_source_timeout",
-            "Miloco设备目录读取超时",
+            "data_source_disabled", "外部家庭后端未启用",
+            fallback_allowed=False,
+        ) from exc
+    except Exception as exc:
+        raise RecipeExecutionError(
+            "data_source_unavailable", "外部家庭后端设备目录读取失败",
             fallback_allowed=True,
         ) from exc
-    if result.returncode != 0:
-        raise RecipeExecutionError(
-            "data_source_unavailable",
-            "Miloco设备目录读取失败",
-            fallback_allowed=True,
-        )
-    return parse_miloco_device_list(result.stdout)
 
 
 def camera_inventory_zh(rows: Any) -> str:
@@ -67,7 +54,7 @@ def camera_inventory_zh(rows: Any) -> str:
     return f"家里一共{len(rows)}台摄像头：{details}。"
 
 
-def parse_miloco_perception_logs(stdout: str, room: str) -> list[dict[str, str]]:
+def parse_external_home_perception_logs(stdout: str, room: str) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for line in str(stdout or "").splitlines():
         timestamp, separator, payload = line.partition(": ")
@@ -84,36 +71,12 @@ def parse_miloco_perception_logs(stdout: str, room: str) -> list[dict[str, str]]
     return rows[-5:]
 
 
-def _miloco_recent_room(room: str) -> list[dict[str, str]]:
-    env = os.environ.copy()
-    env.setdefault("MILOCO_HOME", os.path.expanduser("~/.hermes/miloco"))
-    try:
-        result = subprocess.run(
-            [
-                os.getenv("MILOCO_CLI", "miloco-cli"), "perceive", "logs",
-                "--since", "6h", "--jsonl",
-            ],
-            capture_output=True, text=True, timeout=20, env=env, shell=False,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise RecipeExecutionError(
-            "data_source_timeout", "Miloco近期感知记录读取超时",
-            fallback_allowed=False,
-        ) from exc
-    if result.returncode != 0:
-        raise RecipeExecutionError(
-            "data_source_unavailable", "Miloco近期感知记录读取失败",
-            fallback_allowed=False,
-        )
-    return parse_miloco_perception_logs(result.stdout, room)
+def external_home_turtle_recent() -> list[dict[str, str]]:
+    raise RecipeExecutionError("capability_not_configured", "公开版不内置宠物感知配方")
 
 
-def miloco_turtle_recent() -> list[dict[str, str]]:
-    return _miloco_recent_room(os.getenv("JARVIS_TURTLE_ROOM", "起居室"))
-
-
-def miloco_hamster_recent() -> list[dict[str, str]]:
-    return _miloco_recent_room(os.getenv("JARVIS_HAMSTER_ROOM", "示例房间"))
+def external_home_hamster_recent() -> list[dict[str, str]]:
+    raise RecipeExecutionError("capability_not_configured", "公开版不内置宠物感知配方")
 
 
 def _recent_activity_zh(rows: Any, subject: str) -> str:

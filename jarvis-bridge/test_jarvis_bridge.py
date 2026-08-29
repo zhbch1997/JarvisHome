@@ -14,7 +14,7 @@ from jarvis_bridge import (  # noqa: E402
     parse_hermes_output,
     parse_hermes_streams,
     sanitize_for_tts,
-    extract_miloco_answer,
+    extract_external_home_answer,
     default_run_home,
 )
 
@@ -126,61 +126,24 @@ class JarvisBridgeTests(unittest.TestCase):
             self.assertEqual(result["jarvis"]["route"], "home-unavailable")
             self.assertIn("暂时无法确认", result["choices"][0]["message"]["content"])
 
-    def test_extract_miloco_answer_supports_nested_data(self):
+    def test_extract_external_home_answer_supports_nested_data(self):
         self.assertEqual(
-            extract_miloco_answer({"code": 0, "data": {"answer": "两台摄像头都在线。"}}),
+            extract_external_home_answer({"code": 0, "data": {"answer": "两台摄像头都在线。"}}),
             "两台摄像头都在线。",
         )
 
-    def test_natural_pet_activity_reads_recent_logs_without_live_query(self):
-        devices = {"data": [{"name": "示例摄像头A", "did": "hamster", "online": True}]}
-        logs = '2026-07-27T10:40:00+08:00: {"示例房间": "宠物仓鼠在黄色小碗旁边。"}\n'
-        calls = []
+    def test_external_home_query_uses_only_optional_http_client(self):
+        backend = unittest.mock.Mock()
+        backend.query.return_value = "后端返回的家庭状态。"
+        with patch("jarvis_bridge.ExternalHomeClient.from_env", return_value=backend):
+            answer = default_run_home("查询家庭状态")
+        self.assertEqual("后端返回的家庭状态。", answer)
+        backend.query.assert_called_once_with("查询家庭状态")
 
-        def fake_run(argv, **kwargs):
-            calls.append(argv)
-            output = json.dumps(devices, ensure_ascii=False) if argv[-2:] == ["perceive", "devices"] else logs
-            return type("Result", (), {"returncode": 0, "stdout": output})()
-
-        with patch("jarvis_bridge.subprocess.run", side_effect=fake_run):
-            answer = default_run_home("宠物仓鼠在干嘛")
-
-        self.assertIn("10:40", answer)
-        self.assertIn("黄色小碗旁边", answer)
-        self.assertFalse(any("query" in argv for argv in calls))
-
-    def test_natural_pet_activity_without_recent_log_does_not_live_query(self):
-        devices = {"data": [{"name": "示例摄像头A", "did": "hamster", "online": True}]}
-        calls = []
-
-        def fake_run(argv, **kwargs):
-            calls.append(argv)
-            output = json.dumps(devices, ensure_ascii=False) if argv[-2:] == ["perceive", "devices"] else ""
-            return type("Result", (), {"returncode": 0, "stdout": output})()
-
-        with patch("jarvis_bridge.subprocess.run", side_effect=fake_run):
-            answer = default_run_home("看看宠物仓鼠在干嘛")
-
-        self.assertIn("最近的感知日志没有记录到宠物仓鼠的明确活动", answer)
-        self.assertFalse(any("query" in argv for argv in calls))
-
-    def test_explicit_realtime_camera_request_still_uses_live_query(self):
-        devices = {"data": [{"name": "示例摄像头A", "did": "hamster", "online": True}]}
-        calls = []
-
-        def fake_run(argv, **kwargs):
-            calls.append(argv)
-            if argv[-2:] == ["perceive", "devices"]:
-                output = json.dumps(devices, ensure_ascii=False)
-            else:
-                output = json.dumps({"data": {"answer": "宠物仓鼠在黄色小碗旁边。"}}, ensure_ascii=False)
-            return type("Result", (), {"returncode": 0, "stdout": output})()
-
-        with patch("jarvis_bridge.subprocess.run", side_effect=fake_run):
-            answer = default_run_home("现在实时看一下宠物仓鼠")
-
-        self.assertIn("黄色小碗旁边", answer)
-        self.assertTrue(any("query" in argv for argv in calls))
+    def test_external_home_query_fails_closed_when_plugin_is_disabled(self):
+        with patch("jarvis_bridge.ExternalHomeClient.from_env", side_effect=ValueError("disabled")):
+            with self.assertRaisesRegex(ValueError, "disabled"):
+                default_run_home("查询家庭状态")
 
     def test_local_only_chat_bypasses_hermes_and_uses_local_model(self):
         with TemporaryDirectory() as d:
@@ -197,7 +160,7 @@ class JarvisBridgeTests(unittest.TestCase):
             self.assertEqual(result["jarvis"]["route"], "local-model")
             self.assertEqual(result["choices"][0]["message"]["content"], "本地模型回答")
 
-    def test_local_only_camera_query_bypasses_model_and_calls_miloco(self):
+    def test_local_only_camera_query_bypasses_model_and_calls_external_home(self):
         with TemporaryDirectory() as d:
             fallback_calls = []
             home_calls = []
@@ -211,7 +174,7 @@ class JarvisBridgeTests(unittest.TestCase):
             result = engine.complete({"messages": [{"role": "user", "content": "现在示例摄像头A在干嘛"}]})
             self.assertEqual(fallback_calls, [])
             self.assertEqual(home_calls, ["现在示例摄像头A在干嘛"])
-            self.assertEqual(result["jarvis"]["route"], "local-miloco")
+            self.assertEqual(result["jarvis"]["route"], "local-external_home")
             self.assertIn("宠物仓鼠", result["choices"][0]["message"]["content"])
 
     def test_empty_user_message_is_rejected(self):

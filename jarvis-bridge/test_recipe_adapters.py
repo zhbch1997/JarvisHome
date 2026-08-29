@@ -1,9 +1,8 @@
 import unittest
-import subprocess
-from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from recipe_adapters import camera_inventory_zh, miloco_device_list, parse_miloco_device_list
+from external_home_client import ExternalHomeConfigError
+from recipe_adapters import camera_inventory_zh, external_home_device_list, parse_external_home_device_list
 from recipe_runtime import RecipeExecutionError
 
 
@@ -15,7 +14,7 @@ class RecipeAdapterTests(unittest.TestCase):
             "did-3 | 示例摄像头A | 示例房间 | camera | offline",
         ])
 
-        rows = parse_miloco_device_list(stdout)
+        rows = parse_external_home_device_list(stdout)
 
         self.assertEqual(rows, [
             {"id": "did-1", "name": "宠物龟摄像头", "room": "客厅", "category": "camera", "online": True},
@@ -33,22 +32,23 @@ class RecipeAdapterTests(unittest.TestCase):
     def test_camera_template_handles_empty_catalog(self):
         self.assertEqual(camera_inventory_zh([]), "设备目录里没有找到category为camera的摄像头。")
 
-    def test_device_list_nonzero_exit_is_structured_recoverable_error(self):
-        failed = SimpleNamespace(returncode=1, stdout="", stderr="offline")
-        with patch("recipe_adapters.subprocess.run", return_value=failed):
-            with self.assertRaises(RecipeExecutionError) as caught:
-                miloco_device_list()
-        self.assertEqual(caught.exception.code, "data_source_unavailable")
-        self.assertTrue(caught.exception.fallback_allowed)
-
-    def test_device_list_timeout_is_structured_recoverable_error(self):
+    def test_disabled_plugin_is_structured_nonrecoverable_error(self):
         with patch(
-            "recipe_adapters.subprocess.run",
-            side_effect=subprocess.TimeoutExpired("miloco-cli", 20),
+            "recipe_adapters.ExternalHomeClient.from_env",
+            side_effect=ExternalHomeConfigError("disabled"),
         ):
             with self.assertRaises(RecipeExecutionError) as caught:
-                miloco_device_list()
-        self.assertEqual(caught.exception.code, "data_source_timeout")
+                external_home_device_list()
+        self.assertEqual(caught.exception.code, "data_source_disabled")
+        self.assertFalse(caught.exception.fallback_allowed)
+
+    def test_http_failure_is_structured_recoverable_error(self):
+        backend = Mock()
+        backend.list_devices.side_effect = TimeoutError("offline")
+        with patch("recipe_adapters.ExternalHomeClient.from_env", return_value=backend):
+            with self.assertRaises(RecipeExecutionError) as caught:
+                external_home_device_list()
+        self.assertEqual(caught.exception.code, "data_source_unavailable")
         self.assertTrue(caught.exception.fallback_allowed)
 
 

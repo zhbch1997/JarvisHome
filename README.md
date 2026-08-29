@@ -8,15 +8,28 @@ Jarvis Home connects a voice entry point with layered local arbitration, bounded
 
 This repository is an **offline staging workspace**. It is not yet published and does not contain production credentials, household databases, camera media, model weights, or runtime state.
 
-## Planned components
+## Documentation
+
+- [Architecture and trust boundaries](docs/architecture.md)
+- [MiGPT Vue fork preparation](docs/migpt-vue-fork.md)
+- [Main-project license decision](docs/license-decision.md)
+- [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [Security policy](SECURITY.md)
+
+## Included components
 
 - `jarvis-bridge/` — two-stage arbitration, execution plans, capability registry, feedback and evolution pipeline
-- `integrations/migpt-vue/` — MiGPT Vue fork/adapter metadata; upstream source will remain a separate repository
-- `integrations/miloco/` — Miloco adapter and setup documentation
-- `integrations/openclaw/` — OpenClaw adapter and setup documentation
+- `integrations/` — external-integration boundaries and preparation documentation; external runtimes are not bundled
 - `config/` — redacted configuration templates
-- `scripts/` — install, doctor, security and release checks
-- `docs/` — architecture, privacy and deployment documentation
+- `scripts/` — doctor, test, security, build-verification and clean-clone checks
+- `docs/` — architecture, licensing and integration documentation
+
+## Roadmap
+
+- Clean MiGPT Vue source fork pinned by immutable commit SHA
+- Operator-focused macOS installation and service templates
+- Optional Miloco and OpenClaw adapter setup guides
+- Public release only after the private security contact and final provenance review are completed
 
 ## Safety boundary
 
@@ -59,7 +72,10 @@ The default listener is `127.0.0.1:18083`. Starting the full bridge expects sepa
 
 ```bash
 uv run --locked --extra test bash scripts/test_all.sh
+bash scripts/verify_clean_clone.sh
 ```
+
+The clean-clone command validates the current committed `HEAD`: it clones that revision into a temporary directory, installs only locked dependencies, runs all offline checks, builds distribution artifacts, installs the wheel, and deletes the temporary workspace. It does not include uncommitted or merely staged files. Release maintainers must first export a staged candidate into an isolated temporary commit before using the script as candidate-release evidence.
 
 The release guard scans the Git staged snapshot when files are staged, otherwise the worktree. CI runs on macOS without production credentials or services.
 
@@ -69,4 +85,4 @@ The first release targets macOS on Apple Silicon and treats Ollama, OpenClaw, Mi
 
 ## License
 
-License selection is pending a final third-party attribution review. Do not redistribute this staging tree yet.
+Jarvis Home original code is licensed under the [MIT License](LICENSE). Third-party projects and assets retain their own terms; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Miloco is not included or redistributed and is supported only through a disabled-by-default, brand-neutral external HTTP boundary.

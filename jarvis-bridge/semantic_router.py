@@ -48,7 +48,7 @@ _EXAMPLE_INTENTS = {
     "create", "list", "update", "delete", "query", "action", "chat",
     "camera_recent", "camera_live",
 }
-_EXAMPLE_EXECUTORS = {"miloco", "local_9b", "openclaw"}
+_EXAMPLE_EXECUTORS = {"external_home", "local_9b", "openclaw"}
 _DEFAULT_EXAMPLES = Path(
     os.getenv("JARVIS_ROUTER_EXAMPLES", "./state/route-feedback/router-examples.json")
 )

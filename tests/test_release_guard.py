@@ -146,6 +146,26 @@ class ReleaseGuardTests(unittest.TestCase):
             self.assertEqual("staged", source)
             self.assertIn("forbidden_path", {item.kind for item in findings})
 
+    def test_release_scan_checks_complete_index_not_only_staged_diff(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            import subprocess
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            private_name = "张" + "北辰"
+            (root / "existing.py").write_text(private_name, encoding="utf-8")
+            subprocess.run(["git", "add", "existing.py"], cwd=root, check=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "-qm", "baseline"],
+                cwd=root,
+                check=True,
+            )
+            (root / "unrelated.txt").write_text("safe\n", encoding="utf-8")
+            subprocess.run(["git", "add", "unrelated.txt"], cwd=root, check=True)
+            findings, source = scan_release(root)
+            self.assertEqual("staged", source)
+            self.assertIn("existing.py", {item.path for item in findings})
+            self.assertIn("household_specific_term", {item.kind for item in findings})
+
 
 if __name__ == "__main__":
     unittest.main()

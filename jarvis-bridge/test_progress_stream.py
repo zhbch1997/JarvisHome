@@ -92,7 +92,7 @@ class ProgressStreamTests(unittest.IsolatedAsyncioTestCase):
 
     def test_openclaw_home_prompt_requires_grounded_pet_recent_logs(self):
         prompt = _agent_extra_prompt(Route.HOME)
-        self.assertIn("miloco-perception", prompt)
+        self.assertIn("external_home-perception", prompt)
         self.assertIn("perceive logs --since", prompt)
         self.assertIn("不得重新打开摄像头", prompt)
         self.assertIn("禁止猜测", prompt)
@@ -111,7 +111,7 @@ class ProgressStreamTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(_clean_voice_agent_result(raw), "饲养灯现在是开着的。")
 
     def test_cleaner_removes_trailing_tool_failure_noise(self):
-        raw = "饲养灯现在是开着的。 ⚠️ 🛠️ run node script miloco-cli.js (agent) failed"
+        raw = "饲养灯现在是开着的。 ⚠️ 🛠️ run node script external_home-cli.js (agent) failed"
         self.assertEqual(_clean_voice_agent_result(raw), "饲养灯现在是开着的。")
 
     def test_cleaner_keeps_only_natural_reply_after_internal_chinese_summary(self):

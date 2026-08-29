@@ -39,7 +39,7 @@ class DailyEvolutionTests(unittest.TestCase):
             "original_success": True,
             "review_route": "home",
             "review_intent": "query",
-            "review_executor": "miloco",
+            "review_executor": "external_home",
             "review_capability": "camera_inventory",
             "review_confidence": 0.99,
             "review_safe_to_retry": True,
@@ -70,7 +70,7 @@ class DailyEvolutionTests(unittest.TestCase):
             "feedback_id": "feedback-1", "original_turn_id": "turn-1",
             "request": "列出家里的监控设备",
             "review_route": "home", "review_intent": "query",
-            "review_executor": "miloco", "review_capability": "camera_inventory",
+            "review_executor": "external_home", "review_capability": "camera_inventory",
             "review_confidence": 0.99, "review_safe_to_retry": True,
             "review_reason": "应由摄像头目录能力处理",
         }

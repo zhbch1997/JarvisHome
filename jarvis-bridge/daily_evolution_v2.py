@@ -474,7 +474,7 @@ def propose_capability_tier_changes(
     return proposals
 
 
-_DISCOVERY_FORBIDDEN_TOOLS = {"exec", "shell", "web", "browser", "miloco.device_action"}
+_DISCOVERY_FORBIDDEN_TOOLS = {"exec", "shell", "web", "browser", "external_home.device_action"}
 _DISCOVERY_CACHE_VERSION = 3
 
 

@@ -27,7 +27,7 @@ class ApiAuthTests(unittest.TestCase):
         self.addCleanup(self._temp.cleanup)
         self.module.feedback_ledger = self.module.FeedbackLedger(Path(self._temp.name) / "feedback")
         self.module.capability_registry = self.module.CapabilityRegistry(Path(self._temp.name) / "capabilities")
-        self.module.install_defaults(self.module.capability_registry)
+        self.module.install_defaults(self.module.capability_registry, external_home_enabled=True)
         self.module.intent_router.classifier.capability_registry = self.module.capability_registry
         self.module._EVOLUTION_STATE = Path(self._temp.name) / "evolution"
         self.module._EVOLUTION_AUDIT = self.module._EVOLUTION_STATE / "manual-tier-audit.jsonl"
@@ -604,7 +604,7 @@ class ApiAuthTests(unittest.TestCase):
         self.assertEqual(turn["session_id"], "non-stream-capability")
         self.assertEqual(
             (turn["executor"], turn["producer"], turn["capability"], turn["capability_version"]),
-            ("bridge_recipe", "miloco", "camera_inventory", 1),
+            ("bridge_recipe", "external_home", "camera_inventory", 1),
         )
 
     def test_non_stream_capability_fails_closed_without_restricted_fallback_profile(self):
@@ -613,7 +613,7 @@ class ApiAuthTests(unittest.TestCase):
             capability="camera_inventory",
         )
         failure = self.module.RecipeExecutionError(
-            "data_source_unavailable", "Miloco不可用", fallback_allowed=True,
+            "data_source_unavailable", "External home backend不可用", fallback_allowed=True,
         )
         body = {
             "model": "jarvis", "session_id": "fallback-non-stream",
@@ -632,7 +632,7 @@ class ApiAuthTests(unittest.TestCase):
         turn = self.module.feedback_ledger.last_turn()
         self.assertFalse(turn["success"])
         self.assertEqual(turn["executor"], "bridge_recipe")
-        self.assertEqual(turn["producer"], "miloco")
+        self.assertEqual(turn["producer"], "external_home")
         self.assertEqual(turn["escalation_reason"], "")
         self.assertEqual((turn["capability"], turn["capability_version"]), ("camera_inventory", 1))
 
@@ -655,10 +655,10 @@ class ApiAuthTests(unittest.TestCase):
         fallback.assert_not_awaited()
         turn = self.module.feedback_ledger.last_turn()
         self.assertFalse(turn["success"])
-        self.assertEqual(turn["producer"], "miloco")
+        self.assertEqual(turn["producer"], "external_home")
         self.assertEqual(turn["escalation_reason"], "")
 
-    def test_camera_inventory_is_deterministic_miloco_execution(self):
+    def test_camera_inventory_is_deterministic_external_home_execution(self):
         decision = self.module.RouteDecision(
             self.module.Route.HOME, "query", "semantic_home", "read_only", 1.0,
             capability="camera_inventory",
@@ -702,11 +702,11 @@ class ApiAuthTests(unittest.TestCase):
         frames = [self.module.json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ") and line != "data: [DONE]"]
         stages = [item["jarvis"] for item in frames if (item.get("jarvis") or {}).get("event") == "stage"]
         execution = [item for item in stages if item["phase"] == "execution"]
-        self.assertEqual([(item["producer"], item["status"]) for item in execution], [("miloco", "started"), ("miloco", "completed")])
+        self.assertEqual([(item["producer"], item["status"]) for item in execution], [("external_home", "started"), ("external_home", "completed")])
         self.assertEqual(execution[-1]["data"]["capability"], "camera_catalog")
         metadata = next(item for item in frames if (item.get("jarvis") or {}).get("stage") == "recorded")
         turn = self.module.feedback_ledger.get_turn(metadata["jarvis"]["turn_id"])
-        self.assertEqual((turn["executor"], turn["producer"], turn["capability"]), ("bridge_recipe", "miloco", "camera_catalog"))
+        self.assertEqual((turn["executor"], turn["producer"], turn["capability"]), ("bridge_recipe", "external_home", "camera_catalog"))
 
     def test_stream_capability_fails_closed_without_restricted_fallback_profile(self):
         decision = self.module.RouteDecision(
@@ -714,7 +714,7 @@ class ApiAuthTests(unittest.TestCase):
             capability="camera_inventory",
         )
         failure = self.module.RecipeExecutionError(
-            "data_source_unavailable", "Miloco不可用", fallback_allowed=True,
+            "data_source_unavailable", "External home backend不可用", fallback_allowed=True,
         )
 
         with patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)), \
@@ -736,7 +736,7 @@ class ApiAuthTests(unittest.TestCase):
         turn = turns[0]
         self.assertFalse(turn["success"])
         self.assertEqual(turn["executor"], "bridge_recipe")
-        self.assertEqual(turn["producer"], "miloco")
+        self.assertEqual(turn["producer"], "external_home")
         self.assertEqual(turn["escalation_reason"], "")
 
     def test_stream_capability_never_falls_back_or_duplicates_turn_for_recipe_bug(self):
@@ -764,7 +764,7 @@ class ApiAuthTests(unittest.TestCase):
         turns = self.module.feedback_ledger.session_turns("stream-fallback-denied")
         self.assertEqual(len(turns), 1)
         self.assertFalse(turns[0]["success"])
-        self.assertEqual(turns[0]["producer"], "miloco")
+        self.assertEqual(turns[0]["producer"], "external_home")
         self.assertEqual(turns[0]["escalation_reason"], "")
 
     def test_camera_inventory_stream_records_actual_capability_executor_and_version(self):
@@ -785,7 +785,7 @@ class ApiAuthTests(unittest.TestCase):
         stages = [item["jarvis"] for item in frames if (item.get("jarvis") or {}).get("event") == "stage"]
         execution = [item for item in stages if item["phase"] == "execution"]
         self.assertEqual([(item["producer"], item["status"]) for item in execution], [
-            ("miloco", "started"), ("miloco", "completed"),
+            ("external_home", "started"), ("external_home", "completed"),
         ])
         completed = execution[-1]["data"]
         self.assertEqual(completed["capability"], "camera_inventory")
@@ -794,7 +794,7 @@ class ApiAuthTests(unittest.TestCase):
         metadata = next(item for item in frames if (item.get("jarvis") or {}).get("stage") == "recorded")
         turn = self.module.feedback_ledger.get_turn(metadata["jarvis"]["turn_id"])
         self.assertEqual(turn["executor"], "bridge_recipe")
-        self.assertEqual(turn["producer"], "miloco")
+        self.assertEqual(turn["producer"], "external_home")
         self.assertEqual(turn["capability"], "camera_inventory")
         self.assertEqual(turn["capability_version"], 1)
 
@@ -851,7 +851,7 @@ class ApiAuthTests(unittest.TestCase):
             "executor": "local_9b", "answer": "我不确定。", "success": False,
         })
         raw_review = (
-            '{"route":"home","intent":"query","executor":"miloco",'
+            '{"route":"home","intent":"query","executor":"external_home",'
             '"capability":"camera_inventory","confidence":0.98,'
             '"safe_to_retry":true,"reason":"应读取真实摄像头目录"}'
         )
@@ -1095,7 +1095,7 @@ class ApiAuthTests(unittest.TestCase):
         async def source():
             yield self.module._stage_event(
                 base, phase="tool", producer="openclaw", status="started",
-                data={"tool": "miloco-cli", "arguments": {"secret": "no"}},
+                data={"tool": "external_home-cli", "arguments": {"secret": "no"}},
             )
             yield self.module._sse_event(base, {"content": "完成"})
             yield self.module._sse_event(base, {}, "stop")
@@ -1110,7 +1110,7 @@ class ApiAuthTests(unittest.TestCase):
         asyncio.run(collect())
         turn = self.module.feedback_ledger.last_turn()
         self.assertEqual(turn["tool_trace"], [{
-            "provider": "openclaw", "tool": "miloco-cli", "status": "started",
+            "provider": "openclaw", "tool": "external_home-cli", "status": "started",
         }])
         self.assertNotIn("secret", self.module.json.dumps(turn))
 
@@ -1281,7 +1281,7 @@ class ApiAuthTests(unittest.TestCase):
         decision = RouteDecision(self.module.Route.CAMERA, "camera_recent", "semantic_camera_recent", "read_only")
         with (
             patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)),
-            patch.object(self.module, "run_miloco_query", return_value="乌龟正在晒背。"),
+            patch.object(self.module, "run_external_home_query", return_value="乌龟正在晒背。"),
         ):
             response = self.client.post(
                 "/v1/chat/completions",
@@ -1309,8 +1309,8 @@ class ApiAuthTests(unittest.TestCase):
             [
                 ("arbitration", "router_0_8b", "started"),
                 ("arbitration", "router_0_8b", "completed"),
-                ("execution", "miloco", "started"),
-                ("execution", "miloco", "completed"),
+                ("execution", "external_home", "started"),
+                ("execution", "external_home", "completed"),
             ],
         )
         self.assertTrue(all(item["speak"] is False for item in machine))
@@ -1320,7 +1320,7 @@ class ApiAuthTests(unittest.TestCase):
 
     def test_stream_returns_recorded_turn_id_before_done_without_tts_content(self):
         decision = RouteDecision(self.module.Route.CAMERA, "camera_recent", "semantic_camera_recent", "read_only")
-        with patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(self.module, "run_miloco_query", return_value="乌龟正在晒背。"):
+        with patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(self.module, "run_external_home_query", return_value="乌龟正在晒背。"):
             response = self.client.post(
                 "/v1/chat/completions",
                 headers={"Authorization": "Bearer test-secret"},
@@ -1379,12 +1379,12 @@ class ApiAuthTests(unittest.TestCase):
                 "choices": [{"index": 0, "message": {"role": "assistant", "content": "乌龟正在休息。"}, "finish_reason": "stop"}],
             }
 
-        def slow_miloco(_text):
+        def slow_external_home(_text):
             result = slow_complete({})
             return result["choices"][0]["message"]["content"]
 
         decision = RouteDecision(self.module.Route.CAMERA, "camera_recent", "semantic_camera_recent", "read_only")
-        with patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(self.module, "run_miloco_query", side_effect=slow_miloco):
+        with patch.object(self.module.intent_router, "decide", AsyncMock(return_value=decision)), patch.object(self.module, "run_external_home_query", side_effect=slow_external_home):
             with self.client.stream(
                 "POST",
                 "/v1/chat/completions",
@@ -1483,16 +1483,16 @@ class ApiAuthTests(unittest.TestCase):
             "你当前没有任何家庭任务。",
         )
 
-    def test_task_agent_prompt_allows_miloco_task_management(self):
+    def test_task_agent_prompt_allows_external_home_task_management(self):
         prompt = self.module._agent_extra_prompt(self.module.Route.TASK)
         self.assertIn("家庭任务", prompt)
-        self.assertIn("miloco-create-task", prompt)
+        self.assertIn("external_home-create-task", prompt)
         self.assertNotIn("只处理明确的家庭设备查询或控制", prompt)
 
     def test_home_agent_prompt_remains_device_scoped(self):
         prompt = self.module._agent_extra_prompt(self.module.Route.HOME)
         self.assertIn("只处理明确的家庭设备查询或控制", prompt)
-        self.assertNotIn("miloco-create-task", prompt)
+        self.assertNotIn("external_home-create-task", prompt)
 
     def test_task_progress_phrases_describe_real_task_work(self):
         self.assertEqual(

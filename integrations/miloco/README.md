@@ -1,9 +1,16 @@
-# Optional Miloco integration
+# Optional third-party home backend: Miloco
 
-Miloco is **not included or redistributed** by Jarvis Home.
+Jarvis Home does **not** contain, vendor, download, install, start, embed, or redistribute Miloco, MiMo-VL-Miloco, their web pages, source, binaries, containers, models, configuration, credentials, or runtime data.
 
-Xiaomi Miloco and MiMo-VL-Miloco use a Xiaomi custom non-commercial, use-restricted license rather than an OSI-approved open-source license. Users who enable this adapter must obtain Miloco and its models independently, read the upstream terms, and decide whether their use is permitted.
+Miloco is a separately installed third-party service governed by its own terms. Users who choose it must obtain and deploy it independently and determine whether their use complies with the upstream license.
 
-This repository will contain only an independently authored adapter boundary and mock fixtures. It must not contain copied Miloco configuration, source, model weights, converted weights, container exports, household data, camera media, databases or caches.
+Jarvis Home exposes only a brand-neutral optional HTTP client boundary:
 
-The initial open-source preview should run with a mock home adapter; real Miloco support remains optional and disabled by default.
+```dotenv
+JARVIS_EXTERNAL_HOME_ENABLED=0
+JARVIS_EXTERNAL_HOME_BASE_URL=
+```
+
+The plugin is disabled by default. To use a separately installed compatible backend, an operator explicitly enables it and provides the backend URL. Plain HTTP is accepted only for loopback addresses; other hosts require HTTPS. Credentials must not be embedded in the URL.
+
+Jarvis Home does not provide a Miloco installer or one-click download script. This documentation does not imply Xiaomi endorsement and does not grant any rights to third-party software beyond its own terms.

@@ -1,19 +1,19 @@
-"""Constrained local-4B selector for an allowlisted family of Miloco scenes."""
+"""Constrained local-4B selector for an allowlisted family of External home backend scenes."""
 from __future__ import annotations
 
 import json
 import os
 import re
-import subprocess
+
 from dataclasses import dataclass
-from pathlib import Path
+
 from typing import Any, Callable
 
 import httpx
+from external_home_client import ExternalHomeClient
 
 
-MILOCO_CLI = os.getenv("MILOCO_CLI", "miloco-cli")
-MILOCO_HOME = os.getenv("MILOCO_HOME", str(Path.home() / ".local/share/miloco"))
+
 OLLAMA_URL = os.getenv("JARVIS_LEVEL2_URL", "http://127.0.0.1:11434/api/generate")
 OLLAMA_MODEL = os.getenv("JARVIS_LEVEL2_MODEL", "qwen35-4b-16k:latest")
 _ALLOWED_SCENE_NAMES = {
@@ -33,16 +33,13 @@ class Scene:
 
 
 def _cli(args: list[str]) -> str:
-    env = os.environ.copy()
-    env["MILOCO_HOME"] = MILOCO_HOME
-    result = subprocess.run(
-        [MILOCO_CLI, *args], env=env, text=True, capture_output=True,
-        timeout=20, check=False,
-    )
-    output = (result.stdout or result.stderr).strip()
-    if result.returncode != 0:
-        raise SceneActionError(output or "miloco-cli failed")
-    return output
+    client = ExternalHomeClient.from_env()
+    if args == ["scene", "list"]:
+        return json.dumps({"scenes": client.list_scenes()}, ensure_ascii=False)
+    if len(args) == 3 and args[:2] == ["scene", "trigger"]:
+        client.trigger_scene(args[2])
+        return "ok"
+    raise SceneActionError("unsupported external home operation")
 
 
 def parse_scene_list(text: str) -> list[Scene]:

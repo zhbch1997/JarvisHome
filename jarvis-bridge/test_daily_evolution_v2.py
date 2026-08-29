@@ -120,7 +120,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             {
                 "turn_id": "failed", "request": "摄像头清单", "success": False,
                 "level1": {"decision": "quick_tool", "quick_tool_id": "camera_inventory_quick", "handoff": "lookup", "confidence": 1.0},
-                "tool_trace": [{"provider": "miloco", "tool": "miloco.device_list", "status": "failed"}],
+                "tool_trace": [{"provider": "external_home", "tool": "external_home.device_list", "status": "failed"}],
             },
             {
                 "turn_id": "no-proof", "request": "有几个摄像头", "success": True,
@@ -172,7 +172,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "turn_id": "turn-cap", "request": "列一下监控设备", "success": True,
             "level1": {"decision": "handoff", "quick_tool_id": "none", "handoff": "lookup", "confidence": 0.99},
             "level2": {"decision": "quick_tool", "quick_tool_id": "camera_inventory_quick", "relation": "consistent", "confidence": 0.99},
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_list", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_list", "status": "completed"}],
             "risk_class": "read_only",
         }])
         result = run_daily_v2(
@@ -197,7 +197,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "request": requests[index],
             "execution_class": "quick_tool",
             "tool_trace": [{
-                "provider": "miloco", "tool": "miloco.device_list", "status": "completed",
+                "provider": "external_home", "tool": "external_home.device_list", "status": "completed",
             }],
         } for index in range(5)]
         proposals = propose_capability_tier_changes(turns, registry)
@@ -216,7 +216,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "selector_tier": "openclaw_only", "risk_class": "read_only",
             "execution_class": "quick_tool",
             "tool_trace": [] if index == 1 else [{
-                "provider": "miloco", "tool": "miloco.device_list",
+                "provider": "external_home", "tool": "external_home.device_list",
                 "status": "failed" if index == 0 else "completed",
             }],
         } for index in range(30)]
@@ -234,7 +234,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "selector_tier": "08b_eligible", "risk_class": "read_only",
             "execution_class": "quick_tool",
             "tool_trace": [{
-                "provider": "miloco", "tool": "miloco.device_list", "status": "failed",
+                "provider": "external_home", "tool": "external_home.device_list", "status": "failed",
             }],
         }], registry)
         self.assertEqual(len(proposals), 1)
@@ -256,7 +256,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "selector_tier": "08b_eligible", "risk_class": "read_only",
             "execution_class": "quick_tool",
             "tool_trace": [{
-                "provider": "miloco", "tool": "miloco.device_list", "status": "failed",
+                "provider": "external_home", "tool": "external_home.device_list", "status": "failed",
             }],
         }], registry)
         self.assertEqual(len(proposals), 1)
@@ -272,7 +272,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "success": True, "selector_tier": "openclaw_only",
             "risk_class": "read_only", "execution_class": "quick_tool",
             "tool_trace": [{
-                "provider": "miloco", "tool": "miloco.device_list", "status": "completed",
+                "provider": "external_home", "tool": "external_home.device_list", "status": "completed",
             }],
         }
         repeated = [{**template, "turn_id": "same-turn", "time": "2026-07-29T08:00:00+08:00", "request": f"问法{index}"} for index in range(5)]
@@ -294,7 +294,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "capability": "camera_inventory_quick", "capability_version": 1,
             "success": True, "selector_tier": "openclaw_only",
             "risk_class": "read_only", "execution_class": "quick_tool",
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_list", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_list", "status": "completed"}],
         }
         one_day = [{**template, "turn_id": f"d-{i}", "time": "2026-07-29T08:00:00+08:00", "request": f"问法{i}"} for i in range(5)]
         self.assertEqual(propose_capability_tier_changes(one_day, registry), [])
@@ -316,7 +316,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "capability": "camera_inventory_quick", "capability_version": 1,
             "success": True, "selector_tier": "4b_eligible", "risk_class": "read_only",
             "execution_class": "quick_tool",
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_list", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_list", "status": "completed"}],
         } for i in range(10)]
         proposals = propose_capability_tier_changes(turns, registry)
         self.assertEqual(len(proposals), 1)
@@ -332,7 +332,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
                 "execution_class": "openclaw", "risk_class": "read_only",
                 "capability": "none", "discovery_key": "turtle_lamp_status",
                 "tool_trace": [{
-                    "provider": "miloco", "tool": "miloco.device_status", "status": "completed",
+                    "provider": "external_home", "tool": "external_home.device_status", "status": "completed",
                 }],
             })
         drafts = discover_quick_tool_drafts(rows, self.registry)
@@ -341,7 +341,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         self.assertEqual(draft["key"], "turtle_lamp_status")
         self.assertEqual(draft["status"], "needs_recipe_review")
         self.assertEqual(draft["initial_tier"], "openclaw_only")
-        self.assertEqual(draft["observed_tool_signature"], ["miloco:miloco.device_status"])
+        self.assertEqual(draft["observed_tool_signature"], ["external_home:external_home.device_status"])
         self.assertEqual(draft["evidence_ids"], ["discover-0", "discover-1", "discover-2"])
         self.assertEqual(set(draft["examples"]), {"查龟灯状态", "饲养灯开着吗"})
         self.assertNotIn("capability", draft)
@@ -352,7 +352,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "risk_class": "read_only",
             "level2": {"decision": "quick_tool", "quick_tool_id": "camera_inventory_quick"},
             "tool_trace": [
-                {"provider": "miloco", "tool": "miloco.device_list", "status": "completed"},
+                {"provider": "external_home", "tool": "external_home.device_list", "status": "completed"},
                 {"provider": "bridge", "tool": "postprocess", "status": "failed"},
             ],
         }]
@@ -370,9 +370,9 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         }
         rows = [
             {**common, "turn_id": "exec", "discovery_key": "unsafe_exec", "tool_trace": [{"provider": "openclaw", "tool": "exec", "status": "completed"}]},
-            {**common, "turn_id": "missing-key", "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "completed"}]},
-            {**common, "turn_id": "failed", "discovery_key": "failed_read", "success": False, "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "failed"}]},
-            {**common, "turn_id": "write", "discovery_key": "device_control", "risk_class": "mutation", "tool_trace": [{"provider": "miloco", "tool": "miloco.device_action", "status": "completed"}]},
+            {**common, "turn_id": "missing-key", "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "completed"}]},
+            {**common, "turn_id": "failed", "discovery_key": "failed_read", "success": False, "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "failed"}]},
+            {**common, "turn_id": "write", "discovery_key": "device_control", "risk_class": "mutation", "tool_trace": [{"provider": "external_home", "tool": "external_home.device_action", "status": "completed"}]},
         ]
         self.assertEqual(discover_quick_tool_drafts(rows, self.registry), [])
 
@@ -382,7 +382,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "request": ["查灯状态", "灯开着吗"][i % 2], "success": True,
             "execution_class": "openclaw", "risk_class": "read_only",
             "capability": "none", "discovery_key": "lamp_status",
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "completed"}],
         } for i in range(3)]
         self.write_turns(rows)
         result = run_daily_v2(self.feedback, self.registry, evaluator=lambda _: {})
@@ -779,7 +779,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         existing = [{
             "schema_version": 1, "key": "turtle_lamp_status", "status": "needs_recipe_review",
             "initial_tier": "openclaw_only", "recipe_eligible": False,
-            "observed_tool_signature": ["miloco:device_status"],
+            "observed_tool_signature": ["external_home:device_status"],
             "examples": ["查询饲养灯状态", "饲养灯开着吗"],
             "evidence_ids": ["old-1", "old-2", "old-3"],
             "days": ["2026-07-28", "2026-07-29"], "confidence": 0.98,
@@ -804,7 +804,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         existing = [{
             "schema_version": 1, "key": "camera_inventory", "status": "needs_recipe_review",
             "initial_tier": "openclaw_only", "recipe_eligible": False,
-            "observed_tool_signature": ["miloco:device_list"],
+            "observed_tool_signature": ["external_home:device_list"],
             "examples": ["摄像头清单", "家里有哪些摄像头"],
             "evidence_ids": ["old-1", "old-2", "old-3"],
             "days": ["2026-07-28", "2026-07-29"], "confidence": 0.99,
@@ -875,7 +875,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
                     "turn_id": f"{prefix}-{i}", "time": f"2026-07-{29 + i % 2:02d}T08:00:00+08:00",
                     "request": f"{key}问法{i}", "success": True, "execution_class": "openclaw",
                     "risk_class": "read_only", "capability": "none", "discovery_key": key,
-                    "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "completed"}],
+                    "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "completed"}],
                 })
         self.write_turns(rows)
         result = run_daily_v2(self.feedback, self.registry, evaluator=lambda _: {})
@@ -891,7 +891,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
                     "turn_id": f"det-{prefix}-{i}", "time": f"2026-07-{29 + i % 2:02d}T08:00:00+08:00",
                     "request": f"{key}问法{i}", "success": True, "execution_class": "openclaw",
                     "risk_class": "read_only", "capability": "none", "discovery_key": key,
-                    "tool_trace": [{"provider": "miloco", "tool": tool, "status": "completed"}],
+                    "tool_trace": [{"provider": "external_home", "tool": tool, "status": "completed"}],
                 })
         self.write_turns(rows)
         result = run_daily_v2(self.feedback, self.registry, evaluator=lambda _: {})
@@ -906,7 +906,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
                 "turn_id": f"det-cross-{i}", "time": f"2026-07-{29 + i % 2:02d}T08:00:00+08:00",
                 "request": f"确定性问法{i}", "success": True, "execution_class": "openclaw",
                 "risk_class": "read_only", "capability": "none", "discovery_key": "det_key",
-                "tool_trace": [{"provider": "miloco", "tool": "det_status", "status": "completed"}],
+                "tool_trace": [{"provider": "external_home", "tool": "det_status", "status": "completed"}],
             })
             rows.append({
                 "turn_id": f"sem-cross-{i}", "time": f"2026-07-{29 + i % 2:02d}T09:00:00+08:00",
@@ -930,7 +930,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         existing = [{
             "schema_version": 1, "key": "canonical_status", "status": "needs_recipe_review",
             "initial_tier": "openclaw_only", "recipe_eligible": False,
-            "observed_tool_signature": ["miloco:miloco.device_status"],
+            "observed_tool_signature": ["external_home:external_home.device_status"],
             "examples": ["查询状态", "确认状态"], "evidence_ids": ["old-1", "old-2", "old-3"],
             "days": ["2026-07-28", "2026-07-29"], "confidence": 1.0,
         }]
@@ -940,7 +940,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "turn_id": f"alias-det-{i}", "time": f"2026-07-{29 + i % 2:02d}T08:00:00+08:00",
             "request": f"别名状态问法{i}", "success": True, "execution_class": "openclaw",
             "risk_class": "read_only", "capability": "none", "discovery_key": "alias_key",
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "completed"}],
         } for i in range(3)]
         self.write_turns(rows)
         result = run_daily_v2(self.feedback, self.registry, evaluator=lambda _: {})
@@ -1027,7 +1027,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
         existing = [{
             "schema_version": 1, "key": "canonical_status", "status": "needs_recipe_review",
             "initial_tier": "openclaw_only", "recipe_eligible": False,
-            "observed_tool_signature": ["miloco:miloco.device_status"],
+            "observed_tool_signature": ["external_home:external_home.device_status"],
             "examples": ["旧问法一", "旧问法二"],
             "evidence_ids": ["old-1", "old-2", "old-3"],
             "days": ["2026-07-28", "2026-07-29"], "confidence": 0.99,
@@ -1038,7 +1038,7 @@ class DailyEvolutionV2Tests(unittest.TestCase):
             "turn_id": f"merge-det-{i}", "time": f"2026-07-{30 + i % 2:02d}T08:00:00+08:00",
             "request": f"新问法{i}", "success": True, "execution_class": "openclaw",
             "risk_class": "read_only", "capability": "none", "discovery_key": "canonical_status",
-            "tool_trace": [{"provider": "miloco", "tool": "miloco.device_status", "status": "completed"}],
+            "tool_trace": [{"provider": "external_home", "tool": "external_home.device_status", "status": "completed"}],
         } for i in range(3)]
         self.write_turns(rows)
         result = run_daily_v2(self.feedback, self.registry, evaluator=lambda _: {})

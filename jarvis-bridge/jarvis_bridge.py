@@ -15,7 +15,7 @@ HERMES_BIN = os.path.expanduser("~/.local/bin/hermes")
 DEFAULT_FALLBACK = "http://127.0.0.1:18082/v1/chat/completions"
 LOCAL_MODEL_URL = "http://127.0.0.1:18085/v1/chat/completions"
 OPENCLAW_URL = "http://127.0.0.1:18085/v1/chat/completions"
-MILOCO_BIN = os.path.expanduser("~/.local/bin/miloco-cli")
+from external_home_client import ExternalHomeClient
 logger = logging.getLogger("jarvis_bridge")
 
 _NATIVE_PATTERNS = [
@@ -209,7 +209,7 @@ def default_run_fallback(body: dict[str, Any]) -> str:
     return str(data["choices"][0]["message"].get("content") or "")
 
 
-def extract_miloco_answer(payload: Any) -> str:
+def extract_external_home_answer(payload: Any) -> str:
     if isinstance(payload, dict):
         answer = payload.get("answer")
         if isinstance(answer, str) and answer.strip():
@@ -249,62 +249,8 @@ def _latest_perception_log(stdout: str, room_name: str) -> tuple[str, str]:
 
 
 def default_run_home(text: str) -> str:
-    """Read recent camera logs by default; capture a new view only when explicitly requested."""
-    env = os.environ.copy()
-    env.setdefault("MILOCO_HOME", os.path.expanduser("~/.hermes/miloco"))
-    devices = subprocess.run(
-        [MILOCO_BIN, "perceive", "devices"], capture_output=True, text=True,
-        timeout=8, env=env, shell=False,
-    )
-    if devices.returncode != 0:
-        raise RuntimeError("Miloco devices unavailable")
-    rows = (json.loads(devices.stdout).get("data") or [])
-    by_name = {row.get("name"): row for row in rows if row.get("online")}
-    normalized = re.sub(r"\s+", "", text)
-    if "摄像头" in normalized and any(x in normalized for x in ("几台", "多少", "列表", "有哪些")):
-        cameras = [row for row in rows if row.get("online") and row.get("device_type") == "camera"]
-        names_text = "、".join(str(row.get("name")) for row in cameras if row.get("name"))
-        return f"家里有{len(cameras)}台在线摄像头：{names_text}。"
-    names = []
-    if any(x in normalized for x in ("宠物仓鼠", "示例房间")):
-        names.append("示例摄像头A")
-    if any(x in normalized for x in ("乌龟", "宠物龟", "示例摄像头B", "客厅")):
-        names.append("示例摄像头B")
-    if any(x in normalized for x in ("家里", "几个摄像头", "所有摄像头", "全部摄像头")):
-        names = ["示例摄像头B", "示例摄像头A"]
-    names = list(dict.fromkeys(names))
-    if not names:
-        raise RuntimeError("camera target not recognized")
-    missing = [name for name in names if name not in by_name]
-    if missing:
-        raise RuntimeError("requested camera unavailable")
-    if not _explicit_live_camera_request(text):
-        logs = subprocess.run(
-            [MILOCO_BIN, "perceive", "logs", "--since", "30m", "--jsonl"],
-            capture_output=True, text=True, timeout=12, env=env, shell=False,
-        )
-        if logs.returncode != 0:
-            raise RuntimeError("Miloco perception logs unavailable")
-        room_name = "示例房间" if "示例摄像头A" in names else "客厅"
-        log_time, description = _latest_perception_log(logs.stdout, room_name)
-        if description:
-            return f"最近一次感知是{log_time}：{description}"
-        subject = "宠物仓鼠" if "示例摄像头A" in names else "乌龟"
-        return f"最近的感知日志没有记录到{subject}的明确活动。"
-    argv = [MILOCO_BIN, "perceive", "query"]
-    for name in names:
-        argv += ["--source", str(by_name[name]["did"])]
-    argv += ["--query", text[:300]]
-    proc = subprocess.run(
-        argv, capture_output=True, text=True, timeout=50, env=env, shell=False,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError("Miloco query failed")
-    payload = json.loads(proc.stdout)
-    answer = extract_miloco_answer(payload)
-    if not answer:
-        raise RuntimeError("Miloco returned an empty answer")
-    return answer
+    """Query an explicitly enabled, separately installed HTTP backend."""
+    return ExternalHomeClient.from_env().query(text)
 
 
 class BridgeEngine:
@@ -345,14 +291,14 @@ class BridgeEngine:
         if is_native_intent(text):
             return openai_response("", model, "native-silent")
         if self.local_only:
-            # Camera/live-scene requests use deterministic Miloco first;
+            # Camera/live-scene requests use deterministic External home backend first;
             # other home controls keep OpenClaw tool routing.
             if is_visual_query(text):
                 try:
                     answer = sanitize_for_tts(self.run_home(text))
-                    return openai_response(answer, model, "local-miloco")
+                    return openai_response(answer, model, "local-external_home")
                 except Exception as exc:
-                    logger.warning("Local Miloco route failed: %s: %s", type(exc).__name__, str(exc)[:300])
+                    logger.warning("Local External home backend route failed: %s: %s", type(exc).__name__, str(exc)[:300])
                     return openai_response("家庭服务暂时不可用，我暂时无法确认实时状态。", model, "home-unavailable")
             if is_openclaw_intent(text):
                 try:
@@ -363,9 +309,9 @@ class BridgeEngine:
             if is_realtime_home_request(text):
                 try:
                     answer = sanitize_for_tts(self.run_home(text))
-                    return openai_response(answer, model, "local-miloco")
+                    return openai_response(answer, model, "local-external_home")
                 except Exception as exc:
-                    logger.warning("Local Miloco route failed: %s: %s", type(exc).__name__, str(exc)[:300])
+                    logger.warning("Local External home backend route failed: %s: %s", type(exc).__name__, str(exc)[:300])
                     return openai_response("家庭服务暂时不可用，我暂时无法确认实时状态。", model, "home-unavailable")
             answer = sanitize_for_tts(self.run_fallback(body))
             return openai_response(answer or "我暂时没连上，请稍后再试。", model, "local-model")

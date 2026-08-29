@@ -1,23 +1,23 @@
-"""Constrained local-4B planner for ordinary Miloco device actions.
+"""Constrained local-4B planner for ordinary external-home device actions.
 
 The model may choose only array indices and semantic operations. DID and spec_name
-always come from fresh miloco-cli output and are validated again before execution.
+always come from fresh external HTTP responses and are validated before execution.
 """
 from __future__ import annotations
 
 import json
 import os
 import re
-import subprocess
+
 from dataclasses import dataclass
-from pathlib import Path
+
 from typing import Any, Callable
 
 import httpx
+from external_home_client import ExternalHomeClient
 
 
-MILOCO_CLI = os.getenv("MILOCO_CLI", "miloco-cli")
-MILOCO_HOME = os.getenv("MILOCO_HOME", str(Path.home() / ".local/share/miloco"))
+
 OLLAMA_URL = os.getenv("JARVIS_LEVEL2_URL", "http://127.0.0.1:11434/api/generate")
 OLLAMA_MODEL = os.getenv("JARVIS_LEVEL2_MODEL", "qwen35-4b-16k:latest")
 _BLOCKED_CATEGORIES = {"lock", "door-lock", "camera", "speaker", "smoke-alarm", "gas-sensor"}
@@ -37,16 +37,20 @@ class Device:
 
 
 def _cli(args: list[str]) -> str:
-    env = os.environ.copy()
-    env["MILOCO_HOME"] = MILOCO_HOME
-    result = subprocess.run(
-        [MILOCO_CLI, *args], env=env, text=True, capture_output=True,
-        timeout=20, check=False,
-    )
-    output = (result.stdout or result.stderr).strip()
-    if result.returncode != 0:
-        raise DeviceActionError(output or "miloco-cli failed")
-    return output
+    client = ExternalHomeClient.from_env()
+    if args == ["device", "list"]:
+        return "\n".join(" | ".join((str(d.get("id", "")), str(d.get("name", "")), str(d.get("room", "")), str(d.get("category", "")), "online" if d.get("online") else "offline")) for d in client.list_devices())
+    if len(args) == 3 and args[:2] == ["device", "spec"]:
+        specs = client.device_specs(args[2]).get("specs", [])
+        return "\n".join(str(item.get("line", "")) for item in specs if isinstance(item, dict))
+    if len(args) == 4 and args[:2] == ["device", "action"]:
+        client.control_device(args[2], args[3])
+        return "ok"
+    if len(args) == 5 and args[:2] == ["device", "control"]:
+        value: Any = {"true": True, "false": False}.get(args[4].lower(), args[4])
+        client.control_device(args[2], args[3], value)
+        return "ok"
+    raise DeviceActionError("unsupported external home operation")
 
 
 def parse_device_list(text: str) -> list[Device]:

@@ -5,7 +5,7 @@ from capability_defaults import (
     turtle_recent_activity_bundle,
 )
 from recipe_adapters import (
-    hamster_recent_activity_zh, parse_miloco_perception_logs,
+    hamster_recent_activity_zh, parse_external_home_perception_logs,
     turtle_recent_activity_zh,
 )
 from recipe_runtime import RecipeExecutionError, RecipeRuntime
@@ -22,7 +22,7 @@ class RecipeRuntimeTests(unittest.TestCase):
 
     def test_bundle_recipe_drives_tool_filter_and_template_without_capability_branch(self):
         runtime = RecipeRuntime(
-            tools={"miloco.device_list": lambda: self.devices},
+            tools={"external_home.device_list": lambda: self.devices},
             templates={"camera_inventory_zh": lambda rows: (
                 f"家里一共{len(rows)}台摄像头：" + "；".join(item["name"] for item in rows) + "。"
             )},
@@ -43,10 +43,10 @@ class RecipeRuntimeTests(unittest.TestCase):
 
     def test_registered_data_source_error_preserves_structured_fallback_permission(self):
         failure = RecipeExecutionError(
-            "data_source_unavailable", "Miloco设备目录读取失败", fallback_allowed=True,
+            "data_source_unavailable", "External home backend设备目录读取失败", fallback_allowed=True,
         )
         runtime = RecipeRuntime(
-            tools={"miloco.device_list": lambda: (_ for _ in ()).throw(failure)},
+            tools={"external_home.device_list": lambda: (_ for _ in ()).throw(failure)},
             templates={"camera_inventory_zh": lambda rows: "never"},
         )
 
@@ -60,7 +60,7 @@ class RecipeRuntimeTests(unittest.TestCase):
         bundle = camera_inventory_bundle()
         bundle["recipe"]["transforms"] = [{"op": "arbitrary_code", "field": "category", "value": "camera"}]
         runtime = RecipeRuntime(
-            tools={"miloco.device_list": lambda: self.devices},
+            tools={"external_home.device_list": lambda: self.devices},
             templates={"camera_inventory_zh": lambda rows: "never"},
         )
 
@@ -70,7 +70,7 @@ class RecipeRuntimeTests(unittest.TestCase):
     def test_unregistered_template_fails_closed(self):
         bundle = camera_inventory_bundle()
         bundle["recipe"]["response_template"] = "unknown_template"
-        runtime = RecipeRuntime(tools={"miloco.device_list": lambda: self.devices}, templates={})
+        runtime = RecipeRuntime(tools={"external_home.device_list": lambda: self.devices}, templates={})
 
         with self.assertRaisesRegex(RecipeExecutionError, "unregistered template"):
             runtime.execute(bundle)
@@ -81,7 +81,7 @@ class RecipeRuntimeTests(unittest.TestCase):
             '2026-07-29T16:01:00+08:00: {"客厅":"两只龟在晒背"}\n'
             'invalid\n'
         )
-        self.assertEqual(parse_miloco_perception_logs(stdout, "示例房间"), [{
+        self.assertEqual(parse_external_home_perception_logs(stdout, "示例房间"), [{
             "time": "2026-07-29T16:00:00+08:00", "description": "宠物仓鼠在跑轮",
         }])
 
@@ -108,8 +108,8 @@ class RecipeRuntimeTests(unittest.TestCase):
         calls = []
         runtime = RecipeRuntime(
             tools={
-                "miloco.turtle_recent": lambda: calls.append("turtle") or turtle_rows,
-                "miloco.hamster_recent": lambda: calls.append("hamster") or hamster_rows,
+                "external_home.turtle_recent": lambda: calls.append("turtle") or turtle_rows,
+                "external_home.hamster_recent": lambda: calls.append("hamster") or hamster_rows,
             },
             templates={
                 "turtle_recent_activity_zh": turtle_recent_activity_zh,

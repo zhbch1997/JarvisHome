@@ -39,7 +39,7 @@ class FeedbackLoopTests(unittest.TestCase):
             ledger = FeedbackLedger(Path(directory))
             turn = ledger.save_turn({
                 "request": "家里有几台摄像头", "route": "home", "intent": "query",
-                "executor": "bridge_recipe", "producer": "miloco",
+                "executor": "bridge_recipe", "producer": "external_home",
                 "capability": "camera_inventory", "capability_version": 2,
                 "answer": "3台", "success": True,
                 "arbitration_id": "arb-abc123",
@@ -99,12 +99,12 @@ class FeedbackLoopTests(unittest.TestCase):
                 "executor": "openclaw", "producer": "openclaw",
                 "answer": "已打开", "success": True,
                 "tool_trace": [{
-                    "provider": "openclaw", "tool": "miloco-cli",
+                    "provider": "openclaw", "tool": "external_home-cli",
                     "status": "completed", "arguments": {"secret": "no"},
                 }],
             })
             self.assertEqual(turn["tool_trace"], [{
-                "provider": "openclaw", "tool": "miloco-cli", "status": "completed",
+                "provider": "openclaw", "tool": "external_home-cli", "status": "completed",
             }])
             self.assertNotIn("secret", json.dumps(turn))
 
@@ -148,7 +148,7 @@ class FeedbackLoopTests(unittest.TestCase):
     def test_last_turn_and_feedback_files_are_private(self):
         turn = self.ledger.save_turn({
             "request": "宠物仓鼠在干嘛", "route": "camera",
-            "intent": "camera_recent", "executor": "miloco",
+            "intent": "camera_recent", "executor": "external_home",
             "answer": "没有看到宠物仓鼠。", "success": True,
         })
         self.assertEqual(self.ledger.last_turn()["turn_id"], turn["turn_id"])
@@ -164,7 +164,7 @@ class FeedbackLoopTests(unittest.TestCase):
 
     def test_review_parser_is_strict(self):
         review = parse_review(json.dumps({
-            "route": "camera", "intent": "camera_recent", "executor": "miloco",
+            "route": "camera", "intent": "camera_recent", "executor": "external_home",
             "capability": "none", "confidence": 0.97,
             "safe_to_retry": True, "reason": "应读取近期日志",
         }))
@@ -175,7 +175,7 @@ class FeedbackLoopTests(unittest.TestCase):
         }))
         self.assertEqual((web_review.route, web_review.executor), ("web_query", "openclaw"))
         capability_review = parse_review(json.dumps({
-            "route": "home", "intent": "query", "executor": "miloco",
+            "route": "home", "intent": "query", "executor": "external_home",
             "capability": "camera_inventory", "confidence": 0.99,
             "safe_to_retry": True, "reason": "摄像头目录应由能力包执行",
         }))
@@ -188,7 +188,7 @@ class FeedbackLoopTests(unittest.TestCase):
     def test_openclaw_review_becomes_bounded_router_prompt_example(self):
         turn = self.ledger.save_turn({
             "request": "以后每晚看看饮水器", "route": "camera",
-            "intent": "camera_recent", "executor": "miloco",
+            "intent": "camera_recent", "executor": "external_home",
             "answer": "没有记录。", "success": True,
         })
         review = RouteReview(
@@ -219,7 +219,7 @@ class FeedbackLoopTests(unittest.TestCase):
             )
             self.assertFalse(review.can_auto_retry)
         query = RouteReview(
-            route="camera", intent="camera_recent", executor="miloco",
+            route="camera", intent="camera_recent", executor="external_home",
             confidence=0.99, safe_to_retry=True, reason="修正路线",
         )
         self.assertTrue(query.can_auto_retry)
@@ -227,26 +227,26 @@ class FeedbackLoopTests(unittest.TestCase):
     def test_capability_review_compares_actual_producer_not_planned_recipe(self):
         turn = self.ledger.save_turn({
             "request": "家里有几台摄像头", "route": "home", "intent": "query",
-            "executor": "bridge_recipe", "producer": "miloco",
+            "executor": "bridge_recipe", "producer": "external_home",
             "capability": "camera_inventory", "capability_version": 1,
             "answer": "3台", "success": True,
         })
-        review = RouteReview("home", "query", "miloco", 0.99, True, "路线正确", "camera_inventory")
+        review = RouteReview("home", "query", "external_home", 0.99, True, "路线正确", "camera_inventory")
         self.ledger.append_feedback(turn, review, "复审")
         self.assertEqual(self.ledger.candidate_examples(), [])
         prompt = build_review_prompt(turn, "复审")
         self.assertIn('"planned_executor": "bridge_recipe"', prompt)
-        self.assertIn('"executor": "miloco"', prompt)
+        self.assertIn('"executor": "external_home"', prompt)
 
     def test_capability_turn_preserves_actual_execution_metadata(self):
         turn = self.ledger.save_turn({
             "session_id": "speaker-1", "request": "家里有几台摄像头",
             "route": "home", "intent": "query", "executor": "bridge_recipe",
-            "producer": "miloco", "capability": "camera_inventory",
+            "producer": "external_home", "capability": "camera_inventory",
             "capability_version": 1, "answer": "家里一共3台摄像头。", "success": True,
         })
         self.assertEqual(turn["executor"], "bridge_recipe")
-        self.assertEqual(turn["producer"], "miloco")
+        self.assertEqual(turn["producer"], "external_home")
         self.assertEqual(turn["capability"], "camera_inventory")
         self.assertEqual(turn["capability_version"], 1)
 
@@ -274,7 +274,7 @@ class FeedbackLoopTests(unittest.TestCase):
         })
         second = self.ledger.save_turn({
             "session_id": "session-a", "request": "第二问", "route": "camera", "intent": "camera_recent",
-            "executor": "miloco", "answer": "第二答", "success": True,
+            "executor": "external_home", "answer": "第二答", "success": True,
         })
         sessions = self.ledger.list_sessions()
         by_id = {item["session_id"]: item for item in sessions}

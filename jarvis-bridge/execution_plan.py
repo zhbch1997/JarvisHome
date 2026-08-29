@@ -134,7 +134,7 @@ def resolve_execution_plan(decision: RouteDecision, registry: CapabilityRegistry
         )
 
     if decision.route is Route.CAMERA:
-        return ExecutionPlan("none", 0, "miloco", "miloco", "execution", "好的主人，我看一下。", "Miloco正在读取并分析画面记录。", "画面还在分析，你再等我一下。")
+        return ExecutionPlan("none", 0, "external_home", "external_home", "execution", "好的主人，我看一下。", "External home backend正在读取并分析画面记录。", "画面还在分析，你再等我一下。")
     if decision.route is Route.LOCAL_CHAT:
         return ExecutionPlan("none", 0, "local_4b", "local_4b", "generation", "好的主人，我想一下。", "本地 4B 正在整理回答。", "回答还在生成，你再等我一下。")
     if decision.route in {Route.HOME, Route.TASK, Route.WEB_QUERY}:

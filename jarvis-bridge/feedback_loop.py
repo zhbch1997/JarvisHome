@@ -16,7 +16,7 @@ _ALLOWED_INTENTS = {
     "create", "list", "update", "delete", "query", "action", "chat",
     "camera_recent", "camera_live",
 }
-_ALLOWED_EXECUTORS = {"miloco", "local_4b", "local_9b", "openclaw"}
+_ALLOWED_EXECUTORS = {"external_home", "local_4b", "local_9b", "openclaw"}
 _MUTATING_INTENTS = {"create", "update", "delete", "action"}
 
 
@@ -73,16 +73,16 @@ def parse_review(raw: str) -> RouteReview:
         raise ValueError("route review contains unsupported executor")
     if not 0 <= confidence <= 1 or not isinstance(value["safe_to_retry"], bool) or not reason:
         raise ValueError("route review contains invalid fields")
-    if route == "camera" and executor != "miloco":
-        raise ValueError("camera review must use miloco")
+    if route == "camera" and executor != "external_home":
+        raise ValueError("camera review must use external_home")
     if route == "local_chat" and executor != "local_4b":
         raise ValueError("local chat review must use local_4b")
     if route == "web_query" and (intent != "query" or executor != "openclaw"):
         raise ValueError("web query review must use query/openclaw")
     if capability not in {"none", "camera_inventory"}:
         raise ValueError("route review contains unsupported capability")
-    if capability == "camera_inventory" and (route, intent, executor) != ("home", "query", "miloco"):
-        raise ValueError("camera inventory capability must use home/query/miloco")
+    if capability == "camera_inventory" and (route, intent, executor) != ("home", "query", "external_home"):
+        raise ValueError("camera inventory capability must use home/query/external_home")
     return RouteReview(route, intent, executor, confidence, value["safe_to_retry"], reason, capability)
 
 
@@ -176,7 +176,7 @@ class FeedbackLedger:
             status = str(item.get("status") or "")
             elapsed_ms = item.get("elapsed_ms")
             if (
-                provider in {"openclaw", "miloco", "local_9b_agent"}
+                provider in {"openclaw", "external_home", "local_9b_agent"}
                 and status in {"started", "completed", "failed"}
                 and tool
                 and all(ch.isalnum() or ch in "._-" for ch in tool)
@@ -456,9 +456,9 @@ def build_review_prompt(turn: dict[str, Any], feedback: str) -> str:
         "只输出一个JSON对象，不输出Markdown或解释。"
         "route仅可为task/camera/home/web_query/local_chat；"
         "intent仅可为create/list/update/delete/query/action/chat/camera_recent/camera_live；"
-        "executor表示实际结果生产者，仅可为miloco/local_4b/openclaw；planned_executor只是Bridge计划执行方式，不据此判错。"
+        "executor表示实际结果生产者，仅可为external_home/local_4b/openclaw；planned_executor只是Bridge计划执行方式，不据此判错。"
         "web_query用于外部实时信息或联网检索且必须使用query/openclaw。"
-        "capability仅可为camera_inventory或none；询问家中摄像头数量、清单、有哪些摄像头时用camera_inventory，且必须home/query/miloco；其他用none。"
+        "capability仅可为camera_inventory或none；询问家中摄像头数量、清单、有哪些摄像头时用camera_inventory，且必须home/query/external_home；其他用none。"
         "safe_to_retry只有纯查询或聊天才可为true；创建、修改、删除、设备控制必须false。"
         "输出字段必须恰好为route,intent,executor,capability,confidence,safe_to_retry,reason。\n"
         + json.dumps(payload, ensure_ascii=False)

@@ -44,8 +44,8 @@ from evolution_review_v2 import (
 from jarvis_bridge import default_run_home, extract_user_text, openai_response
 from local_chat import LocalChatBackend
 from recipe_adapters import (
-    camera_inventory_zh, hamster_recent_activity_zh, miloco_device_list,
-    miloco_hamster_recent, miloco_turtle_recent, turtle_recent_activity_zh,
+    camera_inventory_zh, hamster_recent_activity_zh, external_home_device_list,
+    external_home_hamster_recent, external_home_turtle_recent, turtle_recent_activity_zh,
 )
 from recipe_runtime import RecipeExecutionError, RecipeRuntime
 from review_job import openclaw_reviewer
@@ -112,9 +112,9 @@ feedback_ledger = FeedbackLedger(
 )
 recipe_runtime = RecipeRuntime(
     tools={
-        "miloco.device_list": miloco_device_list,
-        "miloco.turtle_recent": miloco_turtle_recent,
-        "miloco.hamster_recent": miloco_hamster_recent,
+        "external_home.device_list": external_home_device_list,
+        "external_home.turtle_recent": external_home_turtle_recent,
+        "external_home.hamster_recent": external_home_hamster_recent,
     },
     templates={
         "camera_inventory_zh": camera_inventory_zh,
@@ -564,13 +564,13 @@ def _progress_phrases(decision: RouteDecision) -> tuple[str, str, str]:
     if decision.route is Route.CAMERA:
         return (
             "好的主人，我看一下。",
-            "Miloco正在读取并分析画面记录。",
+            "External home backend正在读取并分析画面记录。",
             "画面还在分析，你再等我一下。",
         )
     if decision.route is Route.HOME and decision.intent == "action":
         return (
             "好的主人，我来处理。",
-            "OpenClaw正在调用Miloco执行并核验设备状态。",
+            "OpenClaw正在调用External home backend执行并核验设备状态。",
             "设备操作还在核验，你再等我一下。",
         )
     if decision.route is Route.WEB_QUERY:
@@ -657,7 +657,7 @@ async def _with_progress(
 
 async def _visual_result_stream(body: dict[str, Any], base: dict[str, Any]):
     async with _lock:
-        content = await asyncio.to_thread(run_miloco_query, extract_user_text(body))
+        content = await asyncio.to_thread(run_external_home_query, extract_user_text(body))
     if content:
         yield _sse_event(base, {"content": content})
     yield _sse_event(base, {}, "stop")
@@ -769,7 +769,7 @@ async def _recording_stream(
                         (execution_plan_state or {}).get("plan") or execution_plan
                     )
                     default_phase, default_producer = {
-                        Route.CAMERA: ("execution", "miloco"),
+                        Route.CAMERA: ("execution", "external_home"),
                         Route.HOME: ("planning", "openclaw"),
                         Route.WEB_QUERY: ("planning", "openclaw"),
                         Route.TASK: ("planning", "openclaw"),
@@ -922,7 +922,7 @@ def _agent_extra_prompt(route: Route | None, surface: str = "speaker") -> str:
             common
             + "只处理明确的家庭任务创建、查询、修改、暂停、启用或删除。"
             "查询任务时先直接给出任务内容、状态和时间，不要只反问下一步；"
-            "必须加载并严格遵循miloco-create-task或miloco-terminate-task；"
+            "必须加载并严格遵循external_home-create-task或external_home-terminate-task；"
             "只有拿到真实task_id并完成相关rule或cron装配后才能声称创建成功。"
         )
     if route is Route.WEB_QUERY:
@@ -937,11 +937,11 @@ def _agent_extra_prompt(route: Route | None, surface: str = "speaker") -> str:
     return (
         common
         + "只处理明确的家庭设备查询或控制。"
-        "如果用户询问摄像头数量或清单，必须执行miloco-cli device list，"
+        "如果用户询问摄像头数量或清单，必须执行external_home-cli device list，"
         "只统计category严格等于camera的设备；不得把video-doorbell、speaker或其他带视频能力的设备算作摄像头，"
         "并按真实目录逐个列出名称和房间。"
-        "如果用户询问宠物龟、乌龟、宠物仓鼠等宠物当前在做什么，必须先读取miloco-perception技能，"
-        "默认执行miloco-cli perceive logs --since读取对应摄像头的近期感知记录，不得重新打开摄像头实时查看；"
+        "如果用户询问宠物龟、乌龟、宠物仓鼠等宠物当前在做什么，必须先读取external_home-perception技能，"
+        "默认执行external_home-cli perceive logs --since读取对应摄像头的近期感知记录，不得重新打开摄像头实时查看；"
         "仅当用户明确说现在看一下、打开摄像头看看时才实时感知。"
         "没有近期明确记录就如实说明，禁止猜测宠物数量、位置、动作或状态。"
     )
@@ -1116,8 +1116,8 @@ async def _openclaw_ws_stream(
         await ws.close()
 
 
-def run_miloco_query(text: str) -> str:
-    """Run the deterministic local Miloco camera adapter."""
+def run_external_home_query(text: str) -> str:
+    """Run the deterministic local External home backend camera adapter."""
     return default_run_home(text)
 
 
@@ -1229,7 +1229,7 @@ async def run_openclaw(
 
 def _executor_for(decision: RouteDecision) -> str:
     if decision.route is Route.CAMERA:
-        return "miloco"
+        return "external_home"
     if decision.route in {Route.HOME, Route.TASK, Route.WEB_QUERY}:
         return "openclaw"
     if decision.route is Route.LOCAL_CHAT:
@@ -1251,7 +1251,7 @@ def _decision_from_review(review: RouteReview) -> RouteDecision:
 
 def _review_is_currently_executable(review: RouteReview) -> bool:
     expected = {
-        "camera": "miloco",
+        "camera": "external_home",
         "local_chat": "local_4b",
         "task": "openclaw",
         "home": "openclaw",
@@ -1274,7 +1274,7 @@ async def _execute_decision(
         return openai_response(content, model, "routing_failed"), content
     if decision.route is Route.CAMERA:
         async with _lock:
-            content = await asyncio.to_thread(run_miloco_query, text)
+            content = await asyncio.to_thread(run_external_home_query, text)
         return openai_response(content, model, "camera"), content
     if decision.capability != "none":
         plan = execution_plan or resolve_execution_plan(decision, capability_registry)
@@ -1598,9 +1598,9 @@ async def _stream_chat(body: dict[str, Any]):
     execution_body["messages"] = history_messages + [{"role": "user", "content": user_text}]
 
     # Camera/live-scene queries bypass the general OpenClaw tool loop. The
-    # BridgeEngine routes these deterministically to Miloco.
+    # BridgeEngine routes these deterministically to External home backend.
     if decision.route is Route.CAMERA:
-        yield _stage_event(base, phase="execution", producer="miloco", status="started")
+        yield _stage_event(base, phase="execution", producer="external_home", status="started")
         source = _recording_stream(
             _visual_result_stream(execution_body, base),
             request=user_text,

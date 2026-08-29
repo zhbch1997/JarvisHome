@@ -1,6 +1,6 @@
 # Contributing
 
-This project is not open for public contributions until its license and security contact are finalized.
+Contributions are accepted under the project's MIT License. A private security contact must still be finalized before public release.
 
 For local development:
 
