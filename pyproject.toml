@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools==80.9.0", "wheel==0.45.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jarvis-home"
+version = "0.1.0.dev0"
+description = "Local-first home AI orchestration bridge"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{name = "Jarvis Home Contributors"}]
+dependencies = [
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "uvicorn[standard]>=0.30,<1",
+  "websockets>=14,<17",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+jarvis-home = "jarvis_launcher:main"
+jarvis-home-demo = "mock_home:main"
+
+[tool.setuptools]
+package-dir = {"" = "jarvis-bridge"}
+py-modules = [
+  "api_server", "arbitration", "capability_defaults", "capability_evolution",
+  "capability_registry", "capability_validation", "daily_evolution",
+  "daily_evolution_v2", "evolution_review_v2", "execution_plan",
+  "feedback_loop", "home_device_control", "home_scene_control",
+  "jarvis_bridge", "jarvis_launcher", "local_chat", "mock_home", "prompt_evolution",
+  "quick_tool_discovery", "recipe_adapters", "recipe_runtime", "review_job",
+  "router", "semantic_router",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["jarvis-bridge", "tests"]
+python_files = ["test_*.py"]
+addopts = "-q"

@@ -38,7 +38,7 @@ FORBIDDEN_SUFFIXES = {
     ".jpg", ".jpeg", ".png", ".webp", ".gif", ".wav", ".mp3", ".m4a",
     ".gguf", ".onnx", ".mlmodel", ".crt", ".cer", ".p12", ".pfx", ".plist",
 }
-SKIP_NAMES = {".git"}
+SKIP_NAMES = {".git", ".venv"}
 TEXT_SUFFIXES = {
     ".py", ".js", ".ts", ".tsx", ".vue", ".html", ".css", ".md", ".txt",
     ".json", ".yaml", ".yml", ".toml", ".sh", ".plist", ".example", "",
@@ -151,7 +151,7 @@ def scan_staged(root: Path) -> list[Finding]:
         relative = Path(name)
         if relative.as_posix() == "scripts/release_guard.py":
             continue
-        if any(part in FORBIDDEN_NAMES for part in relative.parts) or relative.suffix.lower() in FORBIDDEN_SUFFIXES:
+        if any(part in FORBIDDEN_NAMES or part == ".venv" for part in relative.parts) or relative.suffix.lower() in FORBIDDEN_SUFFIXES:
             findings.append(Finding("forbidden_path", name, "runtime/private staged path"))
             continue
         blob = subprocess.run(

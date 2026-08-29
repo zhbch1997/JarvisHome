@@ -97,6 +97,15 @@ class ReleaseGuardTests(unittest.TestCase):
                 findings = scan_tree(root)
                 self.assertIn("forbidden_path", {item.kind for item in findings})
 
+    def test_worktree_scan_skips_generated_virtual_environment(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            venv = root / ".venv" / "bin"
+            venv.mkdir(parents=True)
+            personal_path = "/" + "Users" + "/alice/private"
+            (venv / "activate").write_text(f"VIRTUAL_ENV={personal_path}\n", encoding="utf-8")
+            self.assertEqual([], scan_tree(root))
+
     def test_release_scan_prefers_staged_snapshot_over_ignored_worktree_cache(self):
         with tempfile.TemporaryDirectory() as raw:
             root = Path(raw)
@@ -123,6 +132,19 @@ class ReleaseGuardTests(unittest.TestCase):
             findings, source = scan_release(root)
             self.assertEqual("staged", source)
             self.assertIn("household_specific_term", {item.kind for item in findings})
+
+    def test_release_scan_blocks_force_staged_virtual_environment(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            import subprocess
+            subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+            runtime = root / ".venv" / "runtime.txt"
+            runtime.parent.mkdir()
+            runtime.write_text("otherwise harmless\n", encoding="utf-8")
+            subprocess.run(["git", "add", "-f", ".venv/runtime.txt"], cwd=root, check=True)
+            findings, source = scan_release(root)
+            self.assertEqual("staged", source)
+            self.assertIn("forbidden_path", {item.kind for item in findings})
 
 
 if __name__ == "__main__":
