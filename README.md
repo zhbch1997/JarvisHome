@@ -121,7 +121,7 @@ Jarvis Home 不限定前端形态。它可以接在音箱、网页、手机应�
 需要 macOS 或 Linux、Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)。
 
 ```bash
-git clone <repository-url> jarvis-home
+git clone https://github.com/zhbch1997/JavisHome.git jarvis-home
 cd jarvis-home
 uv sync --locked --extra test
 uv run --locked --extra test jarvis-home-demo
@@ -242,7 +242,7 @@ python3 scripts/release_guard.py
 
 ## 项目状态
 
-Jarvis Home 当前是经过脱敏和测试的早期开源内核。它已经可以构建、安装和运行离线 Demo，但公开发布前仍需完成最终源码来源复核、安全联系方式和首个用户安装流程。
+Jarvis Home 当前是已经公开、经过脱敏和测试的早期开源内核。它可以构建、安装和运行离线 Demo。下一步是完成安全联系方式、首个用户安装流程和更完整的来源复核。
 
 这个仓库不会复制任何私人家庭部署。家庭档案、设备名称、摄像头媒体、模型、凭据、数据库和运行状态都不属于开源项目的一部分。
 

@@ -18,6 +18,11 @@ dependencies = [
   "websockets>=14,<17",
 ]
 
+[project.urls]
+Homepage = "https://github.com/zhbch1997/JavisHome"
+Repository = "https://github.com/zhbch1997/JavisHome"
+Issues = "https://github.com/zhbch1997/JavisHome/issues"
+
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
 

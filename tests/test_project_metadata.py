@@ -19,6 +19,14 @@ class ProjectMetadataTests(unittest.TestCase):
         self.assertIn("test", project["optional-dependencies"])
         self.assertEqual("jarvis_launcher:main", project["scripts"]["jarvis-home"])
         self.assertEqual("mock_home:main", project["scripts"]["jarvis-home-demo"])
+        self.assertEqual("https://github.com/zhbch1997/JavisHome", project["urls"]["Homepage"])
+        self.assertEqual("https://github.com/zhbch1997/JavisHome", project["urls"]["Repository"])
+        self.assertEqual("https://github.com/zhbch1997/JavisHome/issues", project["urls"]["Issues"])
+
+    def test_readme_uses_the_public_clone_url(self):
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("git clone https://github.com/zhbch1997/JavisHome.git", readme)
+        self.assertNotIn("<repository-url>", readme)
 
     def test_setuptools_includes_launcher_and_bridge_modules(self):
         data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
