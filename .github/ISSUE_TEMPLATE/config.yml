@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/zhbch1997/JarvisHome/security/policy
+    about: Report vulnerabilities privately. Do not post secrets or private household data in an issue.
+  - name: Questions and ideas
+    url: https://github.com/zhbch1997/JarvisHome/discussions
+    about: Ask setup questions or discuss ideas that are not yet actionable issues.

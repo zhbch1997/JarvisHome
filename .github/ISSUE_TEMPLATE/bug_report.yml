@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible problem in Jarvis Home
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Remove credentials, household names, real device identifiers, logs with private content, and camera media before submitting.
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem
+      description: What happened, and what did you expect instead?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run ...
+        2. Send ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Jarvis Home revision
+      description: Commit SHA, tag, or release name
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, uv version, and enabled external integrations
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Redacted evidence
+      description: Include the smallest useful traceback or output after removing private data.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I reproduced this with the latest revision or a named release.
+          required: true
+        - label: I removed credentials and private household data.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

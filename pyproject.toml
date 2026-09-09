@@ -19,9 +19,9 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/zhbch1997/JavisHome"
-Repository = "https://github.com/zhbch1997/JavisHome"
-Issues = "https://github.com/zhbch1997/JavisHome/issues"
+Homepage = "https://github.com/zhbch1997/JarvisHome"
+Repository = "https://github.com/zhbch1997/JarvisHome"
+Issues = "https://github.com/zhbch1997/JarvisHome/issues"
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]

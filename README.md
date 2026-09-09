@@ -16,9 +16,10 @@
 </p>
 
 <p align="center">
+  <a href="README_EN.md">English</a> ·
   <a href="#先体验一下">快速体验</a> ·
   <a href="docs/architecture.md">架构</a> ·
-  <a href="#现在做到哪了">路线图</a> ·
+  <a href="ROADMAP.md">路线图</a> ·
   <a href="CONTRIBUTING.md">参与开发</a> ·
   <a href="SECURITY.md">安全</a>
 </p>
@@ -121,7 +122,7 @@ Jarvis Home 不限定前端形态。它可以接在音箱、网页、手机应�
 需要 macOS 或 Linux、Python 3.11+ 和 [uv](https://docs.astral.sh/uv/)。
 
 ```bash
-git clone https://github.com/zhbch1997/JavisHome.git jarvis-home
+git clone https://github.com/zhbch1997/JarvisHome.git jarvis-home
 cd jarvis-home
 uv sync --locked --extra test
 uv run --locked --extra test jarvis-home-demo
@@ -234,6 +235,7 @@ python3 scripts/release_guard.py
 ## 文档
 
 - [架构与信任边界](docs/architecture.md)
+- [项目路线图](ROADMAP.md)
 - [MiGPT Vue fork 准备](docs/migpt-vue-fork.md)
 - [许可证决策记录](docs/license-decision.md)
 - [第三方声明](THIRD_PARTY_NOTICES.md)
@@ -245,6 +247,8 @@ python3 scripts/release_guard.py
 Jarvis Home 当前是已经公开、经过脱敏和测试的早期开源内核。它可以构建、安装和运行离线 Demo。下一步是完成安全联系方式、首个用户安装流程和更完整的来源复核。
 
 这个仓库不会复制任何私人家庭部署。家庭档案、设备名称、摄像头媒体、模型、凭据、数据库和运行状态都不属于开源项目的一部分。
+
+想参与开发，可以从带有 [`good first issue`](https://github.com/zhbch1997/JarvisHome/labels/good%20first%20issue) 标签的任务开始，或先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)。
 
 ## License
 

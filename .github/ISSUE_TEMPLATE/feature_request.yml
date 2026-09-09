@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a bounded improvement to Jarvis Home
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+      description: Describe the user problem without assuming a specific implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should Jarvis Home do?
+    validations:
+      required: true
+  - type: textarea
+    id: boundary
+    attributes:
+      label: Trust and safety boundary
+      description: Explain external services, device effects, permissions, confirmation, and failure behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Offline verification
+      description: How can this be tested without private infrastructure or real devices?
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope checks
+      options:
+        - label: The feature can remain disabled by default if it connects to an external service.
+          required: true
+        - label: The proposal does not require private household data in the repository.
+          required: true
