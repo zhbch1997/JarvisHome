@@ -11,6 +11,7 @@ import re
 import time
 import urllib.request
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
@@ -54,16 +55,6 @@ from semantic_router import (
     OllamaIntentClassifier, SemanticRouter, _OUTPUT_SCHEMA, build_router_prompt,
 )
 
-app = FastAPI(title="MiGPT Hermes Jarvis Bridge", version="0.1.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 async def _warm_ollama_model(url: str, model: str) -> None:
     async with httpx.AsyncClient(timeout=120) as client:
         response = await client.post(url, json={
@@ -74,7 +65,6 @@ async def _warm_ollama_model(url: str, model: str) -> None:
         response.raise_for_status()
 
 
-@app.on_event("startup")
 async def warm_arbitration_models() -> None:
     await asyncio.gather(
         _warm_ollama_model(
@@ -86,6 +76,26 @@ async def warm_arbitration_models() -> None:
             os.getenv("JARVIS_LEVEL2_MODEL", "qwen35-4b-16k:latest"),
         ),
     )
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await warm_arbitration_models()
+    yield
+
+
+app = FastAPI(
+    title="MiGPT Hermes Jarvis Bridge",
+    version="0.1.0",
+    lifespan=lifespan,
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 capability_registry = CapabilityRegistry(

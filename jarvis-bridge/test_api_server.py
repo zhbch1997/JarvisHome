@@ -195,6 +195,34 @@ class ApiAuthTests(unittest.TestCase):
             ("http://127.0.0.1:11434/api/generate", "qwen35-4b-16k:latest"),
         ])
 
+    def test_app_lifespan_runs_startup_initialization_once_per_lifespan(self):
+        calls = []
+
+        async def capture():
+            calls.append("warm")
+
+        async def exercise_two_lifespans():
+            with patch.object(self.module, "warm_arbitration_models", side_effect=capture):
+                async with self.module.app.router.lifespan_context(self.module.app):
+                    self.assertEqual(calls, ["warm"])
+                async with self.module.app.router.lifespan_context(self.module.app):
+                    self.assertEqual(calls, ["warm", "warm"])
+
+        self.assertEqual(self.module.app.router.on_startup, [])
+        asyncio.run(exercise_two_lifespans())
+
+    def test_app_lifespan_propagates_startup_failure(self):
+        async def fail_warmup():
+            raise RuntimeError("warmup failed")
+
+        async def enter_lifespan():
+            with patch.object(self.module, "warm_arbitration_models", side_effect=fail_warmup):
+                async with self.module.app.router.lifespan_context(self.module.app):
+                    self.fail("lifespan must not start after warmup failure")
+
+        with self.assertRaisesRegex(RuntimeError, "warmup failed"):
+            asyncio.run(enter_lifespan())
+
     def test_generic_openclaw_handoff_does_not_impersonate_home_route(self):
         prompt = self.module._agent_extra_prompt(None)
         self.assertIn("理解用户的开放式请求", prompt)
