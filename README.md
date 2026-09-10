@@ -18,7 +18,7 @@
 <p align="center">
   <a href="README_EN.md">English</a> ·
   <a href="#先体验一下">快速体验</a> ·
-  <a href="docs/architecture.md">架构</a> ·
+  <a href="docs/system-overview.md">架构图</a> ·
   <a href="ROADMAP.md">路线图</a> ·
   <a href="CONTRIBUTING.md">参与开发</a> ·
   <a href="SECURITY.md">安全</a>
@@ -26,6 +26,21 @@
 
 > [!NOTE]
 > Jarvis Home 还在早期开发阶段。仓库已经包含可运行的桥接内核、离线 Mock Home、完整测试与构建流程，但还不是面向普通用户的一键安装产品。
+
+```mermaid
+flowchart LR
+    C[语音 / 网页 / 手机] --> B[Jarvis Bridge]
+    B --> L1[本地一级仲裁]
+    L1 --> CHAT[本地聊天]
+    L1 --> QT[受控 Quick Tool]
+    L1 --> L2[本地二级仲裁]
+    L2 --> QT
+    L2 --> OC[可选 OpenClaw]
+    QT --> M[内置 Mock Home]
+    QT -. 默认关闭 .-> H[可选家庭后端]
+```
+
+[查看完整系统图与信任边界](docs/system-overview.md)
 
 ## 为什么做 Jarvis Home
 
@@ -101,6 +116,7 @@ Jarvis Home 不限定前端形态。它可以接在音箱、网页、手机应�
 - [x] 设备控制与场景选择的安全规划器
 - [x] 默认绑定 `127.0.0.1` 的服务入口
 - [x] 无网络、无真实设备副作用的 Mock Home
+- [x] 仅允许回环地址的 Ollama 兼容本地聊天示例
 - [x] 默认关闭的通用外部家庭 HTTP 插件
 - [x] 锁定依赖、wheel/sdist 构建和干净 clone 验证
 - [x] 发布前隐私与运行数据扫描
@@ -113,7 +129,7 @@ Jarvis Home 不限定前端形态。它可以接在音箱、网页、手机应�
 - [ ] AIRI 形象层接入
 - [ ] 更多品牌中立的家庭后端适配规范
 - [ ] 更完整的能力发现、回放和 Shadow 验证流程
-- [ ] 文档站、演示视频和可视化架构图
+- [ ] 文档站和真实演示视频
 
 ## 先体验一下
 
@@ -127,6 +143,8 @@ cd jarvis-home
 uv sync --locked --extra test
 uv run --locked --extra test jarvis-home-demo
 ```
+
+想连接本机已有的 Ollama 兼容模型，可继续运行[最小本地聊天示例](examples/README.md)。该示例不连接 OpenClaw 或家庭设备。
 
 预期输出：
 
@@ -235,6 +253,7 @@ python3 scripts/release_guard.py
 ## 文档
 
 - [架构与信任边界](docs/architecture.md)
+- [系统概览图](docs/system-overview.md)
 - [项目路线图](ROADMAP.md)
 - [MiGPT Vue fork 准备](docs/migpt-vue-fork.md)
 - [许可证决策记录](docs/license-decision.md)

@@ -16,7 +16,7 @@ This roadmap separates code that is already reproducible from ideas that still n
 ## 0.1 alpha: make the core easy to evaluate
 
 - [ ] Publish a short demo captured from a clean, non-private environment
-- [ ] Add a minimal Ollama-compatible local-chat example
+- [x] Add a minimal Ollama-compatible local-chat example
 - [ ] Provide a single documented command for starting the evaluated stack
 - [ ] Verify setup on a clean macOS account and a Linux environment
 - [ ] Publish the first prerelease with checksums and concise release notes

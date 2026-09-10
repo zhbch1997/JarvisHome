@@ -42,6 +42,15 @@ class ProjectMetadataTests(unittest.TestCase):
         for name in expected:
             self.assertTrue((ROOT / name).is_file(), name)
 
+    def test_readmes_link_to_the_canonical_architecture_overview(self):
+        for name in ("README.md", "README_EN.md"):
+            readme = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn("docs/system-overview.md", readme)
+        overview = (ROOT / "docs/system-overview.md").read_text(encoding="utf-8")
+        self.assertIn("```mermaid", overview)
+        self.assertIn("Mock Home", overview)
+        self.assertIn("optional", overview.lower())
+
     def test_setuptools_includes_launcher_and_bridge_modules(self):
         data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         modules = set(data["tool"]["setuptools"]["py-modules"])

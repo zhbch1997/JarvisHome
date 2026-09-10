@@ -7,7 +7,7 @@
 <p align="center">
   <a href="README.md">中文</a> ·
   <a href="#quick-start">Quick start</a> ·
-  <a href="docs/architecture.md">Architecture</a> ·
+  <a href="docs/system-overview.md">System diagram</a> ·
   <a href="ROADMAP.md">Roadmap</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="SECURITY.md">Security</a>
@@ -15,6 +15,21 @@
 
 > [!NOTE]
 > Jarvis Home is in early development. The repository contains a runnable bridge core, a deterministic offline demo, tests, and packaging. It is not yet a one-command consumer product.
+
+```mermaid
+flowchart LR
+    C[Voice / Web / Mobile] --> B[Jarvis Bridge]
+    B --> L1[Local tier-one router]
+    L1 --> CHAT[Local chat]
+    L1 --> QT[Bounded Quick Tool]
+    L1 --> L2[Local tier-two router]
+    L2 --> QT
+    L2 --> OC[Optional OpenClaw]
+    QT --> M[Included Mock Home]
+    QT -. disabled by default .-> H[Optional home backend]
+```
+
+[Open the full system diagram and trust boundaries](docs/system-overview.md).
 
 ## What it does
 
@@ -53,6 +68,7 @@ Implemented and tested in this repository:
 - versioned capability records with validation, promotion, rollback, and audit history;
 - constrained device and scene planners;
 - a deterministic Mock Home with no network or device side effects;
+- a loopback-only Ollama-compatible local-chat example;
 - a generic external-home HTTP client that is disabled by default;
 - locked dependencies, package builds, clean-clone verification, and a release privacy guard.
 
@@ -76,6 +92,8 @@ Expected output:
 ```json
 {"actions":[{"device_id":"demo-light-1","property":"on","value":true}],"adapter":"mock","status":"ok"}
 ```
+
+To test an Ollama-compatible model already running on your machine, continue with the [minimal local-chat example](examples/README.md). It does not connect to OpenClaw or a home device.
 
 Run diagnostics and the full offline test suite:
 
