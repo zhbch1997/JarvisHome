@@ -1,11 +1,14 @@
+import contextlib
+import io
 import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "jarvis-bridge"))
 
-from mock_home import MockHomeAdapter, run_demo
+from mock_home import MockHomeAdapter, main, render_story, run_demo
 
 
 class MockHomeTests(unittest.TestCase):
@@ -34,6 +37,27 @@ class MockHomeTests(unittest.TestCase):
         self.assertEqual(1, len(result["actions"]))
         self.assertEqual(True, result["actions"][0]["value"])
         json.dumps(result, ensure_ascii=False)
+
+    def test_story_mode_explains_the_safe_execution_path(self):
+        story = render_story(run_demo())
+        self.assertIn("User: Turn on the demo room light", story)
+        self.assertIn("Decision: QUICK_TOOL", story)
+        self.assertIn("Capability: mock.light.set", story)
+        self.assertIn("Safety: allowlisted mock device", story)
+        self.assertIn("Result: Demo room light is on", story)
+        self.assertIn("No network. No real devices.", story)
+
+    def test_default_cli_output_remains_machine_readable_json(self):
+        stdout = io.StringIO()
+        with patch.object(sys, "argv", ["jarvis-home-demo"]), contextlib.redirect_stdout(stdout):
+            main()
+        self.assertEqual(run_demo(), json.loads(stdout.getvalue()))
+
+    def test_story_cli_flag_selects_human_readable_output(self):
+        stdout = io.StringIO()
+        with patch.object(sys, "argv", ["jarvis-home-demo", "--story"]), contextlib.redirect_stdout(stdout):
+            main()
+        self.assertEqual(render_story(run_demo()) + "\n", stdout.getvalue())
 
 
 if __name__ == "__main__":

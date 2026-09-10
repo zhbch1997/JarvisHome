@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "jarvis-home"
-version = "0.1.0.dev0"
+version = "0.1.0a1"
 description = "Local-first home AI orchestration bridge"
 readme = "README.md"
 requires-python = ">=3.11"

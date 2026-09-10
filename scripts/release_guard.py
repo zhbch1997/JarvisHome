@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import subprocess
 from dataclasses import dataclass
@@ -63,12 +64,46 @@ HOUSEHOLD_SPECIFIC_TERMS = (
     "乌龟" + "灯", "觉觉" + "猪", "张" + "北辰",
     "宠物仓鼠" + "之眼", "我滴" + "宠物龟", "穹顶" + "之眼", "宠物" + "房",
 )
+PUBLIC_ASSET_SIGNATURES = {
+    "docs/assets/jarvis-home-demo.gif": (b"GIF87a", b"GIF89a"),
+    "docs/assets/jarvis-home-demo.mp4": (b"ftyp",),
+    "docs/assets/social-preview.png": (b"\x89PNG\r\n\x1a\n",),
+}
+PUBLIC_ASSET_SHA256 = {
+    "docs/assets/jarvis-home-demo.gif": "50361b4749f66998517abd6269a5d021008a083a9eec581ceb169e6cb45cbf45",
+    "docs/assets/jarvis-home-demo.mp4": "222735598c9722e2a89220e93ff3ff4368a56350a99ef4b75c7245916ecbd4f0",
+    "docs/assets/social-preview.png": "fc9d89365a13db6e735b29bd10630cc64526374e4d2fd3295450379c8ad626ba",
+}
+MAX_PUBLIC_ASSET_BYTES = 5 * 1024 * 1024
+
+
+def _is_allowed_public_asset(relative: Path, data: bytes) -> bool:
+    signatures = PUBLIC_ASSET_SIGNATURES.get(relative.as_posix())
+    expected_hash = PUBLIC_ASSET_SHA256.get(relative.as_posix())
+    if signatures is None or expected_hash is None or len(data) > MAX_PUBLIC_ASSET_BYTES:
+        return False
+    if relative.suffix.lower() == ".mp4":
+        valid_signature = len(data) >= 12 and data[4:8] == b"ftyp"
+    else:
+        valid_signature = data.startswith(signatures)
+    if not valid_signature or hashlib.sha256(data).hexdigest() != expected_hash:
+        return False
+    decoded = data.decode("utf-8", errors="ignore")
+    return not _text_content_findings(decoded, relative)
 
 
 def _is_forbidden(path: Path, relative: Path) -> bool:
     if any(part in FORBIDDEN_NAMES for part in relative.parts):
         return True
     name = path.name.lower()
+    if path.is_file() and relative.as_posix() in PUBLIC_ASSET_SIGNATURES:
+        try:
+            if path.stat().st_size <= MAX_PUBLIC_ASSET_BYTES and _is_allowed_public_asset(
+                relative, path.read_bytes()
+            ):
+                return False
+        except OSError:
+            pass
     return (
         path.suffix.lower() in FORBIDDEN_SUFFIXES
         or name.endswith(".db-wal")
@@ -152,14 +187,31 @@ def scan_staged(root: Path) -> list[Finding]:
         relative = Path(name)
         if relative.as_posix() == "scripts/release_guard.py":
             continue
-        if any(part in FORBIDDEN_NAMES or part == ".venv" for part in relative.parts) or relative.suffix.lower() in FORBIDDEN_SUFFIXES:
+        forbidden_name = any(part in FORBIDDEN_NAMES or part == ".venv" for part in relative.parts)
+        forbidden_suffix = relative.suffix.lower() in FORBIDDEN_SUFFIXES
+        if forbidden_name or (
+            forbidden_suffix and relative.as_posix() not in PUBLIC_ASSET_SIGNATURES
+        ):
             findings.append(Finding("forbidden_path", name, "runtime/private staged path"))
             continue
+        if forbidden_suffix:
+            size = subprocess.run(
+                ["git", "cat-file", "-s", f":{name}"],
+                cwd=root, text=True, capture_output=True, check=False,
+            )
+            if size.returncode != 0 or int(size.stdout.strip()) > MAX_PUBLIC_ASSET_BYTES:
+                findings.append(Finding("forbidden_path", name, "runtime/private staged path"))
+                continue
         blob = subprocess.run(
             ["git", "show", f":{name}"], cwd=root, capture_output=True, check=False,
         )
         if blob.returncode != 0:
             findings.append(Finding("unreadable_staged_file", name, "cannot read staged blob"))
+            continue
+        if forbidden_suffix:
+            if _is_allowed_public_asset(relative, blob.stdout):
+                continue
+            findings.append(Finding("forbidden_path", name, "runtime/private staged path"))
             continue
         try:
             text = blob.stdout.decode("utf-8")

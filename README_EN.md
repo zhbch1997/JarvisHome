@@ -5,6 +5,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/zhbch1997/JarvisHome/actions/workflows/ci.yml"><img src="https://github.com/zhbch1997/JarvisHome/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/zhbch1997/JarvisHome/releases"><img src="https://img.shields.io/github/v/release/zhbch1997/JarvisHome?include_prereleases" alt="Release"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2ea44f" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-3776ab" alt="Python 3.11+">
+</p>
+
+<p align="center">
   <a href="README.md">中文</a> ·
   <a href="#quick-start">Quick start</a> ·
   <a href="docs/system-overview.md">System diagram</a> ·
@@ -15,6 +22,12 @@
 
 > [!NOTE]
 > Jarvis Home is in early development. The repository contains a runnable bridge core, a deterministic offline demo, tests, and packaging. It is not yet a one-command consumer product.
+
+<p align="center">
+  <img src="docs/assets/jarvis-home-demo.gif" alt="Jarvis Home safe offline demo" width="820">
+</p>
+
+The demo uses only the in-memory Mock Home. It does not contact a network, model server, or real home device.
 
 ```mermaid
 flowchart LR
@@ -83,14 +96,13 @@ The offline demo does not connect to a model, OpenClaw, a camera, or a real devi
 ```bash
 git clone https://github.com/zhbch1997/JarvisHome.git jarvis-home
 cd jarvis-home
-uv sync --locked --extra test
-uv run --locked --extra test jarvis-home-demo
+./demo.sh
 ```
 
-Expected output:
+For machine-readable evidence instead:
 
-```json
-{"actions":[{"device_id":"demo-light-1","property":"on","value":true}],"adapter":"mock","status":"ok"}
+```bash
+uv run --locked jarvis-home-demo
 ```
 
 To test an Ollama-compatible model already running on your machine, continue with the [minimal local-chat example](examples/README.md). It does not connect to OpenClaw or a home device.

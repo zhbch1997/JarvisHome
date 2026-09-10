@@ -9,8 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/zhbch1997/JarvisHome/actions/workflows/ci.yml"><img src="https://github.com/zhbch1997/JarvisHome/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/zhbch1997/JarvisHome/releases"><img src="https://img.shields.io/github/v/release/zhbch1997/JarvisHome?include_prereleases" alt="Release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-2ea44f" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/python-3.11%2B-3776ab" alt="Python 3.11+"></a>
+  <img src="https://img.shields.io/badge/python-3.11%2B-3776ab" alt="Python 3.11+">
   <img src="https://img.shields.io/badge/status-early%20development-f59e0b" alt="Early development">
   <img src="https://img.shields.io/badge/runtime-local--first-6f42c1" alt="Local first">
 </p>
@@ -26,6 +28,12 @@
 
 > [!NOTE]
 > Jarvis Home 还在早期开发阶段。仓库已经包含可运行的桥接内核、离线 Mock Home、完整测试与构建流程，但还不是面向普通用户的一键安装产品。
+
+<p align="center">
+  <img src="docs/assets/jarvis-home-demo.gif" alt="Jarvis Home 离线安全演示" width="820">
+</p>
+
+演示只使用内存中的 Mock Home，不访问网络、模型或真实家庭设备。
 
 ```mermaid
 flowchart LR
@@ -140,16 +148,15 @@ Jarvis Home 不限定前端形态。它可以接在音箱、网页、手机应�
 ```bash
 git clone https://github.com/zhbch1997/JarvisHome.git jarvis-home
 cd jarvis-home
-uv sync --locked --extra test
-uv run --locked --extra test jarvis-home-demo
+./demo.sh
 ```
 
 想连接本机已有的 Ollama 兼容模型，可继续运行[最小本地聊天示例](examples/README.md)。该示例不连接 OpenClaw 或家庭设备。
 
-预期输出：
+需要机器可读的验证结果时：
 
-```json
-{"actions":[{"device_id":"demo-light-1","property":"on","value":true}],"adapter":"mock","status":"ok"}
+```bash
+uv run --locked jarvis-home-demo
 ```
 
 运行诊断和完整测试：

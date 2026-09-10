@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -41,8 +42,30 @@ def run_demo() -> dict[str, Any]:
     return {"status": "ok", "adapter": "mock", "actions": adapter.actions}
 
 
+def render_story(result: dict[str, Any]) -> str:
+    """Render the deterministic demo as a short, human-readable execution trace."""
+    action = result["actions"][0]
+    state = "on" if action["value"] is True else str(action["value"])
+    return "\n".join([
+        "Jarvis Home · Safe offline demo",
+        "",
+        "User: Turn on the demo room light",
+        "Decision: QUICK_TOOL",
+        "Capability: mock.light.set",
+        "Safety: allowlisted mock device",
+        f"Action: {action['device_id']} · {action['property']}={str(action['value']).lower()}",
+        f"Result: Demo room light is {state}",
+        "",
+        "No network. No real devices. No credentials.",
+    ])
+
+
 def main() -> None:
-    print(json.dumps(run_demo(), ensure_ascii=False, sort_keys=True))
+    result = run_demo()
+    if "--story" in sys.argv[1:]:
+        print(render_story(result))
+        return
+    print(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
 
 if __name__ == "__main__":

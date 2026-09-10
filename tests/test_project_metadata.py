@@ -11,6 +11,7 @@ class ProjectMetadataTests(unittest.TestCase):
         data = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
         project = data["project"]
         self.assertEqual("jarvis-home", project["name"])
+        self.assertEqual("0.1.0a1", project["version"])
         self.assertEqual(">=3.11", project["requires-python"])
         self.assertEqual(
             {"fastapi", "httpx", "uvicorn", "websockets"},
@@ -30,6 +31,12 @@ class ProjectMetadataTests(unittest.TestCase):
             self.assertNotIn("JavisHome", readme)
             self.assertNotIn("<repository-url>", readme)
 
+    def test_ci_verifies_macos_and_linux(self):
+        workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+        self.assertIn("macos-14", workflow)
+        self.assertIn("ubuntu-latest", workflow)
+        self.assertIn("matrix.os", workflow)
+
     def test_public_contributor_entry_points_exist(self):
         expected = (
             "ROADMAP.md",
@@ -41,6 +48,14 @@ class ProjectMetadataTests(unittest.TestCase):
         )
         for name in expected:
             self.assertTrue((ROOT / name).is_file(), name)
+
+    def test_readmes_show_the_safe_demo_and_one_command_entry_point(self):
+        for name in ("README.md", "README_EN.md"):
+            readme = (ROOT / name).read_text(encoding="utf-8")
+            self.assertIn("docs/assets/jarvis-home-demo.gif", readme)
+            self.assertIn("./demo.sh", readme)
+        self.assertTrue((ROOT / "docs/assets/jarvis-home-demo.gif").is_file())
+        self.assertTrue((ROOT / "docs/assets/social-preview.png").is_file())
 
     def test_readmes_link_to_the_canonical_architecture_overview(self):
         for name in ("README.md", "README_EN.md"):
